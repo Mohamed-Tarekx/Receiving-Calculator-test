@@ -595,7 +595,6 @@
             <h2 class="main-title">حاسبة الإستلام</h2>
             <p class="welcome-msg">مرحباً بك في النظام الذكي لحسابات البضائع المستلمة بدقة وسهولة:</p>
             <div class="menu-grid">
-                <!-- الميزة الجديدة للقائمة 100% -->
                 <button class="menu-card" onclick="openModule('check100')" style="background-color: #fff7ed; border-color: #f48120;">
                     <span class="card-title" style="color: #d66810;">قائمة التشييك 100%</span>
                     <span class="arrow-left" style="color: #d66810;">&#10094;</span>
@@ -641,7 +640,11 @@
                 <button class="back-btn" onclick="showHome()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
                 <span class="module-title">قائمة التشييك 100%</span>
             </div>
-            <div class="info-box">ابحث عن اسم الشركة أو الكود للتأكد من وجودها في قائمة 100% تشييك ومعرفة مشاكلها. يعمل هذا النظام أوفلاين بالكامل بمجرد رفع الشيت لأول مرة.</div>
+            
+            <div class="info-box">
+                <b>ملاحظة هامة جداً قبل الرفع:</b> 
+                يجب أن تفتح شيت الإكسيل أولاً وتضغط كليك يمين على الجدول المحوري (Pivot Table) وتختار (Expand All / توسيع الكل) ليظهر عمود "نوع المخالفة" أمامك على الشاشة قبل الحفظ، وإلا سيقرأ البرنامج الإجمالي فقط!
+            </div>
 
             <!-- Database Status -->
             <div id="dbStatusIndicator"></div>
@@ -1067,18 +1070,16 @@
 
     <script>
         let currentCasingType = 'hank';
-        let currentDryMethod = 'sample'; // Default method for Dry Goods
+        let currentDryMethod = 'sample'; 
 
-        // Block shortcuts like Ctrl+Shift+I, F12, Ctrl+U to prevent simple viewing of code
         document.onkeydown = function(e) {
-            if (e.keyCode == 123) { return false; } // F12
+            if (e.keyCode == 123) { return false; } 
             if (e.ctrlKey && e.shiftKey && e.keyCode == 'I'.charCodeAt(0)) { return false; }
             if (e.ctrlKey && e.shiftKey && e.keyCode == 'C'.charCodeAt(0)) { return false; }
             if (e.ctrlKey && e.shiftKey && e.keyCode == 'J'.charCodeAt(0)) { return false; }
-            if (e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) { return false; } // View source
+            if (e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) { return false; } 
         }
 
-        // Custom Beautiful Mobile Notification instead of browser alert()
         function showNotification(message) {
             const toast = document.getElementById('appToast');
             toast.innerText = message;
@@ -1088,7 +1089,6 @@
             }, 3000);
         }
 
-        // --- COPYRIGHT GUARDIAN AND TAMPERING DETECTOR ---
         (function() {
             const expectedCharCodes = [1578, 1589, 1605, 1610, 1605, 32, 124, 32, 1605, 1581, 1605, 1583, 32, 1591, 1575, 1585, 1602];
             const authorMark = expectedCharCodes.map(code => String.fromCharCode(code)).join('');
@@ -1126,7 +1126,6 @@
             window.addEventListener('load', auditCopyright);
         })();
 
-        // --- NEW CUSTOM PREMIUM DATE PICKER FUNCTIONS ---
         function getWidgetDate(id) {
             const container = document.getElementById('widget-' + id);
             if (!container) return null;
@@ -1217,12 +1216,14 @@
                 // Normalize cells
                 let colA = row[0] !== undefined && row[0] !== null ? String(row[0]).trim() : "";
                 let colB = row[1] !== undefined && row[1] !== null ? String(row[1]).trim() : "";
+                let colC = row[2] !== undefined && row[2] !== null ? String(row[2]).trim() : "";
 
-                if (!colA && !colB) continue;
+                if (!colA && !colB && !colC) continue;
 
                 // Skip headers, footers, totals
                 if (colA.includes("التكرار") || colA.includes("المورد") || colA.includes("قائمة") ||
-                    colA.includes("إجمالي") || colA.includes("Total") || colA.includes("الاجمالى")) {
+                    colA.includes("إجمالي") || colA.includes("Total") || colA.includes("الاجمالى") ||
+                    colB.includes("إجمالي") || colB.includes("Total")) {
                     continue;
                 }
 
@@ -1230,13 +1231,14 @@
                 const getCount = (r) => {
                     for (let j = r.length - 1; j >= 0; j--) {
                         if (r[j] !== undefined && r[j] !== null && String(r[j]).trim() !== "") {
-                            let n = parseInt(String(r[j]).trim());
-                            if (!isNaN(n)) return n;
+                            let strVal = String(r[j]).trim().replace(/,/g, ''); // remove commas like 1,000
+                            if (!isNaN(strVal) && strVal !== "") return parseInt(strVal);
                         }
                     }
                     return 0;
                 };
 
+                let count = getCount(row);
                 let isCompany = false;
                 let code = "";
                 let name = colA;
@@ -1251,8 +1253,6 @@
                     isCompany = true; name = matchEnd[1]; code = matchEnd[2];
                 }
 
-                let count = getCount(row);
-
                 if (isCompany) {
                     currentCompany = {
                         code: code,
@@ -1263,33 +1263,32 @@
                     };
                     db.push(currentCompany);
 
-                    // Sometimes violation is in colB on the same row (Flat Table)
-                    if (colB && isNaN(parseInt(colB))) {
-                        let vCount = getCount(row.slice(1)) || count;
+                    // Sometimes violation is in colB on the same row (Flat or Tabular Pivot Table)
+                    if (colB && isNaN(colB) && colB.length > 2) {
+                        let vCount = getCount(row.slice(1));
+                        if (vCount === 0) vCount = count;
                         currentCompany.violations.push({ type: colB, count: vCount });
                     }
                 } else {
                     // Not a company format, must be a violation detail for the current company
                     if (currentCompany) {
-                        if (colA !== "") {
-                            // Compact Pivot Form
-                            currentCompany.violations.push({ type: colA, count: count });
-                        } else if (colA === "" && colB !== "") {
-                            // Outline/Tabular Pivot Form
-                            let vCount = getCount(row.slice(1)) || count;
-                            currentCompany.violations.push({ type: colB, count: vCount });
+                        let vType = "";
+                        let vCount = count;
+
+                        // Check where the text is located
+                        if (colA && !colA.match(/^\d+$/) && colA.length > 2) {
+                            vType = colA;
+                        } else if (!colA && colB && !colB.match(/^\d+$/) && colB.length > 2) {
+                            vType = colB;
+                        }
+
+                        // Avoid adding "Totals" or the company name itself as a violation
+                        if (vType && vType !== currentCompany.originalStr && !vType.includes("إجمالي") && !vType.includes("Total")) {
+                            currentCompany.violations.push({ type: vType, count: vCount });
                         }
                     }
                 }
             }
-
-            // Cleanup: Add generic violation if none found
-            db.forEach(c => {
-                if (c.violations.length === 0) {
-                    c.violations.push({ type: "مخالفات غير محددة بالشيت", count: c.totalCount });
-                }
-            });
-
             return db;
         }
 
@@ -1352,15 +1351,25 @@
             if (matches.length > 0) {
                 let html = '';
                 matches.forEach(m => {
+                    let violationsHtml = '';
+                    if (m.violations && m.violations.length > 0) {
+                        violationsHtml = `
+                            <ul style="margin-top: 6px; padding-right: 20px; font-size: 0.9rem; color: #450a0a;">
+                                ${m.violations.map(v => `<li style="margin-bottom: 4px;">${v.type} <strong style="color:#ef4444; font-size:0.85rem;">(${v.count} مرة)</strong></li>`).join('')}
+                            </ul>
+                        `;
+                    } else {
+                        // Safe fallback UI without printing garbage text
+                        violationsHtml = `<div style="margin-top: 6px; font-size: 0.85rem; color: #7f1d1d; font-style: italic;">(لم يتم العثور على تفاصيل المخالفات، يرجى عمل Expand للصفوف في الشيت قبل رفعه)</div>`;
+                    }
+
                     html += `
                         <div class="result-box red" style="margin-bottom: 12px; border-width: 2px;">
                             <div class="result-box-label" style="color: #991b1b; font-size:1rem;">⚠️ احذر! الشركة في قائمة التشييك 100%</div>
                             <div class="result-box-value" style="font-size: 1.2rem; margin-top: 6px;">${m.name} <span style="color:#ef4444; font-size:1rem;">(كود: ${m.code || 'غير محدد'})</span></div>
                             <div style="margin-top: 8px; border-top: 1px solid #fca5a5; padding-top: 8px;">
                                 <div style="font-weight: bold; font-size: 0.95rem; color: #7f1d1d;">إجمالي التكرار: ${m.totalCount} مرة</div>
-                                <ul style="margin-top: 6px; padding-right: 20px; font-size: 0.9rem; color: #450a0a;">
-                                    ${m.violations.map(v => `<li style="margin-bottom: 4px;">${v.type} <strong style="color:#ef4444; font-size:0.85rem;">(${v.count} مرة)</strong></li>`).join('')}
-                                </ul>
+                                ${violationsHtml}
                             </div>
                         </div>
                     `;
@@ -1666,7 +1675,6 @@
                 box.innerHTML = html;
             } 
             else {
-                // General fallback when weights are not typed yet
                 box.innerHTML = `
                     <h4>💡 طريقة ومراحل الحساب للكميات:</h4>
                     <ol>
@@ -1719,7 +1727,7 @@
                 html += `<li><b>تقييم القبول والاستلام للشحنة:</b><br>
                         بما أن نتيجة العينة (<code>${value.toFixed(1)}</code> ${unit}) مطابقة أو تزيد عن الاستاندر (<code>${standard}</code> ${unit}):<br>
                         تستلم البضاعة بالكامل بدون أي خصم لحبات التعويض:<br>
-                        <code>العدد الفعلي النهائي المعتمد</code> = <b><code>${actual}</code> حبة</b>.</li>`;
+                        <code>الالعدد الفعلي النهائي المعتمد</code> = <b><code>${actual}</code> حبة</b>.</li>`;
             }
             html += `</ol>`;
             box.innerHTML = html;
@@ -2209,69 +2217,3 @@
     </script>
 </body>
 </html>
-}
-
-{
-type: uploaded file
-fileName: sw.js
-fullContent:
-const CACHE_NAME = 'fathalla-receiving-v11';
-const ASSETS = [
-  './',
-  './index.html',
-  './manifest.json',
-  './sw.js',
-  './logo.png',
-  'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'
-];
-
-// التثبيت المبدئي للملفات في كاش الذاكرة التابع للموبايل
-self.addEventListener('install', (e) => {
-  e.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS);
-    }).then(() => self.skipWaiting())
-  );
-});
-
-// تفعيل المحرك وتصفية الكاش القديم وتحديثه تلقائياً
-self.addEventListener('activate', (e) => {
-  e.waitUntil(
-    caches.keys().then((keys) => {
-      return Promise.all(
-        keys.map((key) => {
-          if (key !== CACHE_NAME) {
-            return caches.delete(key);
-          }
-        })
-      );
-    }).then(() => self.clients.claim())
-  );
-});
-
-// استراتيجية (Network-First): جلب البيانات من الإنترنت أولاً للتحديث اللحظي ثم الرجوع لذاكرة التخزين عند فصل الشبكة
-self.addEventListener('fetch', (e) => {
-  // حماية وتصفية الطلبات المباشرة لضمان عدم توقف النظام أوفلاين بسبب ملحقات المتصفحات الخارجية
-  if (e.request.method !== 'GET' || !e.request.url.startsWith('http')) {
-    return;
-  }
-
-  e.respondWith(
-    fetch(e.request)
-      .then((networkResponse) => {
-        // إذا نجح جلب البيانات عبر الإنترنت، نحدث الكاش فوراً بالنسخة الجديدة ونعرضها للمستخدم
-        if (networkResponse.status === 200) {
-          const responseClone = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(e.request, responseClone);
-          });
-        }
-        return networkResponse;
-      })
-      .catch(() => {
-        // في حالة عدم توفر اتصال بالشبكة، يتم استدعاء النسخة المحفوظة مسبقاً داخل كاش الموبايل مباشرة
-        return caches.match(e.request);
-      })
-  );
-});
-}
