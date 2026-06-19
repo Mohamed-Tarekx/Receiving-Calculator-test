@@ -736,42 +736,409 @@
 
         <!-- 1. Natural Cheese Module -->
         <div id="naturalView" class="module-view">
-            <!-- Handled statically inside base content -->
+            <div class="module-header">
+                <button class="back-btn" onclick="showHome()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
+                <span class="module-title">الجبن الطبيعي</span>
+            </div>
+            <div class="info-box">تصفية العينات وحساب الوزن الفعلي بناءً على متوسط الأوزان الصافية.</div>
+            <div class="form-group">
+                <label>الكمية الكلية (عدد الجرادل/الصفائح)</label>
+                <input type="number" id="natTotalQty" oninput="calculateNatural()">
+            </div>
+            <div class="form-group">
+                <label>الوزن الاستاندر للصفيحة (اختياري)</label>
+                <input type="number" id="natStandard" oninput="calculateNatural()" placeholder="مثال: 20">
+            </div>
+            <div class="samples-container">
+                <div class="samples-header">
+                    <label>أوزان التصفية (الصافي)</label>
+                    <button class="add-sample-btn" id="natAddBtn" onclick="addSampleField('nat')">+ إضافة وزن</button>
+                </div>
+                <div id="natSamplesList">
+                    <div class="form-group"><input type="number" class="nat-sample" oninput="calculateNatural()" placeholder="وزن العينة 1"></div>
+                    <div class="form-group"><input type="number" class="nat-sample" oninput="calculateNatural()" placeholder="وزن العينة 2"></div>
+                </div>
+            </div>
+            <div class="results-section" id="natResults" style="display: none;">
+                <h3 class="results-title">النتائج:</h3>
+                <div class="result-box blue">
+                    <div class="result-box-label">متوسط وزن التصفية الصافي</div>
+                    <div class="result-box-value" id="natResAvg">0 كجم</div>
+                </div>
+                <div class="result-box green">
+                    <div class="result-box-label">الكمية الفعلي المعتمدة للاستلام</div>
+                    <div class="result-box-value" id="natResActual">0 كجم</div>
+                </div>
+                <div class="result-box orange" id="natCompBox" style="display: none;">
+                    <div class="result-box-label">وزن التعويض المستحق</div>
+                    <div class="result-box-value" id="natResComp">0 كجم</div>
+                </div>
+            </div>
+            <!-- Dynamic Steps Box -->
+            <div class="steps-box" id="natStepsBox">
+                <h4>💡 طريقة ومراحل الحساب:</h4>
+                <ol>
+                    <li>يتم تصفية العينات المختارة في المعمل (طرح وزن السرفيس من القائم) للحصول على أوزان تصفية صافية.</li>
+                    <li>نجمع أوزان التصفية ونقسمها على عددها للحصول على <b>متوسط التصفية الصافي</b>.</li>
+                    <li><code>الكمية الفعلي</code> = متوسط التصفية الصافي × الكمية الكلية.</li>
+                    <li><b>شرط الاستاندر:</b> إذا تم تحديد وزن معياري (استاندر) وكان المتوسط أكبر منه، يتم اعتماد الاستاندر كوزن فعلي للاستلام، ويُحسب الفارق كـ <b>تعويض</b> للشركة.</li>
+                </ol>
+            </div>
         </div>
 
         <!-- 2. Processed Cheese / Pickles Module -->
         <div id="processedView" class="module-view">
-            <!-- Handled statically inside base content -->
+            <div class="module-header">
+                <button class="back-btn" onclick="showHome()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
+                <span class="module-title">الجبن المستحلب / المخللات</span>
+            </div>
+            <div class="info-box">الاستلام بناءً على <b>أقل وزن تصفية</b>. في حال ارتفاع كل الصفائح/العبوات عن المعياري؛ يُحسب التعويض (ينطبق على الجبن المستحلب والمخللات).</div>
+            <div class="form-group">
+                <label>الكمية الكلية (عدد الجرادل/الصفائح)</label>
+                <input type="number" id="procTotalQty" oninput="calculateProcessed()">
+            </div>
+            <div class="form-group">
+                <label>الوزن الاستاندر المعياري (اختياري)</label>
+                <input type="number" id="procStandard" oninput="calculateProcessed()" placeholder="مثال: 20">
+            </div>
+            <div class="samples-container">
+                <div class="samples-header">
+                    <label>أوزان التصفية (الصافي)</label>
+                    <button class="add-sample-btn" id="procAddBtn" onclick="addSampleField('proc')">+ إضافة وزن</button>
+                </div>
+                <div id="procSamplesList">
+                    <div class="form-group"><input type="number" class="proc-sample" oninput="calculateProcessed()" placeholder="وزن العينة 1"></div>
+                    <div class="form-group"><input type="number" class="proc-sample" oninput="calculateProcessed()" placeholder="وزن العينة 2"></div>
+                </div>
+            </div>
+            <div class="results-section" id="procResults" style="display: none;">
+                <h3 class="results-title">النتائج:</h3>
+                <div class="result-box blue">
+                    <div class="result-box-label">أقل وزن تصفية (الذي تم الاستلام عليه)</div>
+                    <div class="result-box-value" id="procResMin">0 كجم</div>
+                </div>
+                <div class="result-box green">
+                    <div class="result-box-label">الكمية الفعلي المعتمدة</div>
+                    <div class="result-box-value" id="procResActual">0 كجم</div>
+                </div>
+                <div class="result-box orange" id="procCompBox" style="display: none;">
+                    <div class="result-box-label">التعويض</div>
+                    <div class="result-box-value" id="procResComp">0 كجم</div>
+                </div>
+            </div>
+            <!-- Dynamic Steps Box -->
+            <div class="steps-box" id="procStepsBox">
+                <h4>💡 طريقة ومراحل الحساب:</h4>
+                <ol>
+                    <li>يتم تصفية العينات المختارة وتحديد الوزن الصافي لكل عينة في المعمل.</li>
+                    <li>يتم اختيار <b>أقل وزن تصفية</b> بين العينات وتعتمد عليه عملية الاستلام بالكامل.</li>
+                    <li><code>الكمية الفعلي</code> = أقل وزن تصفية × الكمية الكلية.</li>
+                    <li><b>شرط الاستاندر:</b> إذا كانت جميع العينات الموزونة أعلى من الوزن المعياري (الاستاندر)، يتم الاستلام على الاستاندر، ويُحسب التعويض بالمعادلة: <code>(متوسط العينات الصافي - أقل وزن تصفية) × الكمية الكلية</code>.</li>
+                </ol>
+            </div>
         </div>
 
         <!-- 3. Roumi Cheese Module -->
         <div id="roumiView" class="module-view">
-            <!-- Handled statically inside base content -->
+            <div class="module-header">
+                <button class="back-btn" onclick="showHome()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
+                <span class="module-title">الجبن الرومي</span>
+            </div>
+            <div class="info-box">التحقق من حالة وتصنيف الجبن الرومي حسب تاريخ الإنتاج، مع تنبيهات الصلاحية (18 شهراً).</div>
+            
+            <div class="form-group">
+                <label>تاريخ الإنتاج المدون</label>
+                <!-- NEW PREMIUM DATE WIDGET (Day/Month/Year) -->
+                <div class="custom-date-container" id="widget-roumiProdDate">
+                    <div class="date-inputs-row">
+                        <input type="number" class="date-day" placeholder="يوم" min="1" max="31" inputmode="numeric" oninput="onWidgetInput('roumiProdDate')">
+                        <span class="date-slash">/</span>
+                        <input type="number" class="date-month" placeholder="شهر" min="1" max="12" inputmode="numeric" oninput="onWidgetInput('roumiProdDate')">
+                        <span class="date-slash">/</span>
+                        <input type="number" class="date-year" placeholder="سنة" min="1900" max="2100" inputmode="numeric" oninput="onWidgetInput('roumiProdDate')">
+                        
+                        <div class="calendar-trigger-wrapper">
+                            <!-- Premium Fathalla calendar icon -->
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                            <input type="date" class="hidden-date-picker" onchange="onWidgetPickerChange('roumiProdDate', this.value)">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="results-section" id="roumiResults" style="display: none;">
+                <h3 class="results-title">النتائج:</h3>
+                <div class="result-box blue">
+                    <div class="result-box-label">عمر الجبن بالأيام</div>
+                    <div class="result-box-value" id="roumiResDays">0 يوم</div>
+                </div>
+                <div class="result-box" id="roumiClassBox">
+                    <div class="result-box-label">التصنيف الفني للجبن</div>
+                    <div class="result-box-value" id="roumiResClass">-</div>
+                </div>
+                <div id="roumiAlerts"></div>
+            </div>
         </div>
 
         <!-- 4. Pastrami Module -->
         <div id="pastramiView" class="module-view">
-            <!-- Handled statically inside base content -->
+            <div class="module-header">
+                <button class="back-btn" onclick="showHome()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
+                <span class="module-title">البسطرمة</span>
+            </div>
+            <div class="info-box">حساب نسبة الثوم في العينة (المسموح حتى 20%). ما يزيد يخصم كبونص بالإضافة لتعويض 500 جرام ثابت.</div>
+            <div class="form-group">
+                <label>إجمالي الكمية المستلمة (كجم)</label>
+                <input type="number" id="pastTotalQty" oninput="calculatePastrami()">
+            </div>
+            <div class="form-group">
+                <label>وزن العينة قائم بالثوم (كجم)</label>
+                <input type="number" id="pastGrossWeight" oninput="calculatePastrami()">
+            </div>
+            <div class="form-group">
+                <label>وزن الثوم بعد الخلي (كجم)</label>
+                <input type="number" id="pastGarlicWeight" oninput="calculatePastrami()">
+            </div>
+            <div class="results-section" id="pastramiResults" style="display: none;">
+                <h3 class="results-title">النتائج:</h3>
+                <div class="result-box" id="pastRatioBox">
+                    <div class="result-box-label">نسبة الثوم الحالية في العينة</div>
+                    <div class="result-box-value" id="pastResRatio">0%</div>
+                </div>
+                <div class="result-box green">
+                    <div class="result-box-label">الكمية الفعلي المعتمدة</div>
+                    <div class="result-box-value" id="pastResActual">0 كجم</div>
+                </div>
+                <div class="result-box orange" id="pastBonusBox" style="display: none;">
+                    <div class="result-box-label">بونص مستحق للخصم</div>
+                    <div class="result-box-value" id="pastResBonus">0 كجم</div>
+                </div>
+                <div class="result-box red" id="pastCompBox" style="display: none;">
+                    <div class="result-box-label">تعويض ثابت للشركة</div>
+                    <div class="result-box-value">0.500 كجم</div>
+                </div>
+            </div>
+            <!-- Dynamic Steps Box -->
+            <div class="steps-box" id="pastStepsBox">
+                <h4>💡 طريقة ومراحل الحساب:</h4>
+                <ol>
+                    <li>نأخذ عينة مكونة من فردين (أعلى وأقل نسبة ثوم من حيث السمك)، ونزن العينة كاملة بالثوم (قائم).</li>
+                    <li>يتم خلي العينة تماماً ووزن الثوم المنفصل لمعرفة نسبة وجوده بالمعادلة: <code>(وزن الثوم ÷ وزن العينة قائم) × 100</code>.</li>
+                    <li>إذا كانت نسبة الثوم <b>20% أو أقل</b>: تستلم كامل البضاعة بوزنها الفعلي وبدون أي خصومات.</li>
+                    <li>إذا <b>تعدت النسبة 20%</b>: يُحسب فرق النسبة الزائد ويُضرب في إجمالي الكمية ليكون <b>بونص</b>، ويُخصم كذلك <b>تعويض ثابت قدره 500 جرام (0.500 كجم)</b> من الفعلي المعتمد النهائي.</li>
+                </ol>
+            </div>
         </div>
 
         <!-- 5. Luncheon Module -->
         <div id="luncheonView" class="module-view">
-            <!-- Handled statically inside base content -->
+            <div class="module-header">
+                <button class="back-btn" onclick="showHome()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
+                <span class="module-title">اللانشون (المراعي)</span>
+            </div>
+            <div class="info-box">تحديد البونص والفعلي لكل فرد لانشون بعد تخصيم الفوارغ (الوزن المعياري بين 5 و 5.100 كجم).</div>
+            <div class="form-group">
+                <label>عدد الأفراد الكلي</label>
+                <input type="number" id="lunchPieces" oninput="calculateLuncheon()">
+            </div>
+            <div class="form-group">
+                <label>متوسط وزن الفرد الصافي (كجم)</label>
+                <input type="number" id="lunchAvgWeight" oninput="calculateLuncheon()">
+            </div>
+            <div class="results-section" id="lunchResults" style="display: none;">
+                <h3 class="results-title">النتائج:</h3>
+                <div class="result-box blue">
+                    <div class="result-box-label">الوزن الموزون الكلي</div>
+                    <div class="result-box-value" id="lunchTotalWeight">0 كجم</div>
+                </div>
+                <div class="result-box green">
+                    <div class="result-box-label">إجمالي الفعلي</div>
+                    <div class="result-box-value" id="lunchResActual">0 كجم</div>
+                </div>
+                <div class="result-box orange">
+                    <div class="result-box-label">إجمالي البونص</div>
+                    <div class="result-box-value" id="lunchResBonus">0 كجم</div>
+                </div>
+            </div>
+            <!-- Dynamic Steps Box -->
+            <div class="steps-box" id="lunchStepsBox">
+                <h4>💡 طريقة ومراحل الحساب:</h4>
+                <ol>
+                    <li>الوزن الصافي المعياري للفرد يتراوح بين 5.0 كجم كحد أدنى و 5.100 كجم كحد أقصى بعد خصم الفوارغ.</li>
+                    <li>إذا كان وزن الفرد الصافي <b>5.0 كجم أو أقل</b>: تستلم الكمية بالكامل كوزن فعلي.</li>
+                    <li>إذا كان الوزن الصافي <b>بين 5.0 كجم و 5.100 كجم</b>: يُعتمد 5.0 كجم كوزن فعلي، وتحسب الزيادة بالكامل كـ <b>بونص</b>.</li>
+                    <li>إذا كان الوزن الصافي <b>أكبر من 5.100 كجم</b>: يُثبت البونص عند الحد الأقصى (100 جرام للفرد)، ويُعتمد باقي الوزن الزائد لصالح <b>الوزن الفعلي</b> للشركة.</li>
+                </ol>
+            </div>
         </div>
 
         <!-- 6. Dry Goods Module -->
         <div id="dryView" class="module-view">
-            <!-- Handled statically inside base content -->
+            <div class="module-header">
+                <button class="back-btn" onclick="showHome()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
+                <span class="module-title">الرز والسكر والدقيق</span>
+            </div>
+            <div class="info-box">نسبة السماح لوزن عينات الـ 100 كجم هي 1 كجم (الحد الأدنى 99 كجم). أما عند اختيار طريقة وزن الشحنة بالكامل فيتم تطبيق نسبة سماح 1% على إجمالي الكمية المطلوبة.</div>
+            
+            <div class="form-group">
+                <label>الكمية الكلية المستلمة (كجم)</label>
+                <input type="number" id="dryTotalQty" oninput="calculateDry()">
+            </div>
+            
+            <!-- NEW SEGMENT CONTROL inside Dry Goods to choose calculation method for quantities >= 100 kg -->
+            <div class="segment-control" id="dryMethodSegment" style="display: none;">
+                <button id="segmentDrySample" class="segment-btn active" onclick="switchDryMethod('sample')">طريقة عينة الـ 100 كجم</button>
+                <button id="segmentDryTotal" class="segment-btn" onclick="switchDryMethod('total')">وزن الشحنة بالكامل</button>
+            </div>
+
+            <!-- dynamic fields based on quantity and selected method -->
+            <div class="form-group" id="drySample100Group">
+                <label>وزن عينة الـ 100 كجم الفعلي</label>
+                <input type="number" id="drySampleWeight" oninput="calculateDry()">
+            </div>
+            <div class="form-group" id="dryTotalActualGroup" style="display: none;">
+                <label>وزن الكمية بالكامل فعلياً (كجم)</label>
+                <input type="number" id="dryTotalActualWeight" oninput="calculateDry()">
+            </div>
+
+            <div class="results-section" id="dryResults" style="display: none;">
+                <h3 class="results-title">النتائج:</h3>
+                <div class="result-box green">
+                    <div class="result-box-label">الكمية الفعلي المعتمدة</div>
+                    <div class="result-box-value" id="dryResActual">0 كجم</div>
+                </div>
+                <div class="result-box red" id="dryCompBox" style="display: none;">
+                    <div class="result-box-label">التعويض المطلوب خصمه (مقرب لأعلى)</div>
+                    <div class="result-box-value" id="dryResComp">0 كجم</div>
+                </div>
+            </div>
+            <!-- Dynamic Steps Box -->
+            <div class="steps-box" id="dryStepsBox">
+                <h4>💡 طريقة ومراحل الحساب:</h4>
+                <ol>
+                    <li>نأخذ عينة اختبار وزنها الإجمالي 100 كيلو من البضاعة الموردة بالكامل ونقوم بوزنها بدقة.</li>
+                    <li>تُعطى نسبة سماح حتى 1 كجم، بحيث يكون الحد الأدنى المقبول للاستلام الآمن هو 99 كجم.</li>
+                    <li>إذا قل وزن عينة الـ 100 كجم عن 99 كجم: نحدد <b>العجز</b> بطرح الوزن الموزون من 99.</li>
+                    <li>نحسب عدد عينات البضاعة: <code>الكمية الكلية ÷ 100</code>.</li>
+                    <li><b>التعويض المستحق</b> = العجز × عدد العينات (ويقرب دائماً لأعلى رقم صحيح)، ويُطرح من الكمية الكلية لحساب <b>الفعلي</b>.</li>
+                </ol>
+            </div>
         </div>
 
         <!-- 7. Casings Module -->
         <div id="casingsView" class="module-view">
-            <!-- Handled statically inside base content -->
+            <div class="module-header">
+                <button class="back-btn" onclick="showHome()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
+                <span class="module-title">الهانك والممبار</span>
+            </div>
+            <div class="segment-control">
+                <button id="segmentHank" class="segment-btn active" onclick="switchCasings('hank')">الهانك (15 كجم)</button>
+                <button id="segmentMombar" class="segment-btn" onclick="switchCasings('mombar')">الممبار (60 سم)</button>
+            </div>
+            <div class="form-group">
+                <label>الكمية الكلية المستلمة (عدد حبات)</label>
+                <input type="number" id="caseTotalQty" oninput="calculateCasings()">
+            </div>
+            <div class="form-group">
+                <label id="caseLabel">نتيجة حشو/قياس عينة واحدة</label>
+                <input type="number" id="caseSampleValue" oninput="calculateCasings()">
+            </div>
+            <div class="results-section" id="caseResults" style="display: none;">
+                <h3 class="results-title">النتائج:</h3>
+                <div class="result-box green">
+                    <div class="result-box-label">العدد الفعلي المعتمد للاستلام</div>
+                    <div class="result-box-value" id="caseResActual">0</div>
+                </div>
+                <div class="result-box red" id="caseCompBox" style="display: none;">
+                    <div class="result-box-label">عدد حبات التعويض المطلوبة (مقربة لأعلى)</div>
+                    <div class="result-box-value" id="caseResComp">0</div>
+                </div>
+            </div>
+            <!-- Dynamic Steps Box -->
+            <div class="steps-box" id="caseStepsBox">
+                <h4>💡 طريقة ومراحل الحساب:</h4>
+                <ol>
+                    <li><b>الهانك المعياري:</b> يجب أن يتسع لحشو 15 كجم لحم. <b>الممبار المعياري:</b> يجب أن يكون بطول 60 سم.</li>
+                    <li>يتم حشو أو قياس عينة فردية واحدة للتأكد من مطابقتها للاستاندر والمواصفات.</li>
+                    <li>إذا قل وزن حشو الهانك أو طول الممبار عن الاستاندر, نحدد نسبة العجز: <code>(المعياري - المقاس الفعلي) ÷ المعياري</code>.</li>
+                    <li><b>عدد حبات التعويض</b> = نسبة العجز × الكمية الكلية (وتقرب لأعلى حبة صحيحة دائماً لضمان الدقة ومصلحة الاستلام).</li>
+                    <li><b>العدد الفعلي المعتمد</b> = الكمية الكلية - عدد حبات التعويض.</li>
+                </ol>
+            </div>
         </div>
 
         <!-- 8. Expiry Calculator Module -->
         <div id="expiryView" class="module-view">
-            <!-- Handled statically inside base content -->
+            <div class="module-header">
+                <button class="back-btn" onclick="showHome()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
+                <span class="module-title">حاسبة صلاحية المنتجات</span>
+            </div>
+            <div class="info-box">حساب الصلاحية الإجمالية بالسنوات والشهور مع فحص نسبة انتهاء الصلاحية وتنبيهات الربع مدة بدقة.</div>
+            
+            <div class="form-group">
+                <label>تاريخ الإنتاج</label>
+                <!-- NEW PREMIUM DATE WIDGET (Day/Month/Year) -->
+                <div class="custom-date-container" id="widget-expProdDate">
+                    <div class="date-inputs-row">
+                        <input type="number" class="date-day" placeholder="يوم" min="1" max="31" inputmode="numeric" oninput="onWidgetInput('expProdDate')">
+                        <span class="date-slash">/</span>
+                        <input type="number" class="date-month" placeholder="شهر" min="1" max="12" inputmode="numeric" oninput="onWidgetInput('expProdDate')">
+                        <span class="date-slash">/</span>
+                        <input type="number" class="date-year" placeholder="سنة" min="1900" max="2100" inputmode="numeric" oninput="onWidgetInput('expProdDate')">
+                        
+                        <div class="calendar-trigger-wrapper">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                            <input type="date" class="hidden-date-picker" onchange="onWidgetPickerChange('expProdDate', this.value)">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>تاريخ الانتهاء</label>
+                <!-- NEW PREMIUM DATE WIDGET (Day/Month/Year) -->
+                <div class="custom-date-container" id="widget-expEndDate">
+                    <div class="date-inputs-row">
+                        <input type="number" class="date-day" placeholder="يوم" min="1" max="31" inputmode="numeric" oninput="onWidgetInput('expEndDate')">
+                        <span class="date-slash">/</span>
+                        <input type="number" class="date-month" placeholder="شهر" min="1" max="12" inputmode="numeric" oninput="onWidgetInput('expEndDate')">
+                        <span class="date-slash">/</span>
+                        <input type="number" class="date-year" placeholder="سنة" min="1900" max="2100" inputmode="numeric" oninput="onWidgetInput('expEndDate')">
+                        
+                        <div class="calendar-trigger-wrapper">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                            <input type="date" class="hidden-date-picker" onchange="onWidgetPickerChange('expEndDate', this.value)">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="results-section" id="expResults" style="display: none;">
+                <h3 class="results-title">بيانات الصلاحية:</h3>
+                <div id="expErr" class="alert-banner red" style="display: none;">تاريخ الانتهاء غير منطقي!</div>
+                <div id="expCleanResults">
+                    <div class="result-box blue">
+                        <div class="result-box-label">فترة الصلاحية الكلية</div>
+                        <div class="result-box-value" id="expResTotal">-</div>
+                    </div>
+                    <div class="result-box orange">
+                        <div class="result-box-label">المدة التي مضت من الصلاحية</div>
+                        <div class="result-box-value" id="expResPassed">-</div>
+                    </div>
+                    
+                    <!-- NEW RESULTS BOX FOR HALF DURATION TRACKING -->
+                    <div class="result-box" id="expHalfBox" style="display: none;">
+                        <div class="result-box-label" id="expHalfLabel">متابعة نصف مدة الصلاحية</div>
+                        <div class="result-box-value" id="expResHalf">-</div>
+                    </div>
+
+                    <div class="result-box green" id="expRemainingBox">
+                        <div class="result-box-label">المدة المتبقية للاستهلاك</div>
+                        <div class="result-box-value" id="expResRemaining">-</div>
+                    </div>
+                    <div id="expAlerts"></div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -787,13 +1154,24 @@
         let currentCasingType = 'hank';
         let currentDryMethod = 'sample'; // Default method for Dry Goods
 
-        // Fallback default mock lookup list of 100% checked companies (For immediate out of the box playability!)
+        // Default built-in list of 100% checked companies (For immediate out of the box playability!)
         const defaultCompanies = [
             { code: "121", name: "الصقر روتانا", issue: "توريد بضائع اكسبير وتالفة", repeat: 1 },
             { code: "105", name: "المراعي للألبان", issue: "عدم الالتزام بدرجة حرارة التبريد أثناء التوريد", repeat: 3 },
             { code: "244", name: "حلواني اخوان", issue: "وجود عجز متكرر في وزن العبوات الصافية", repeat: 2 },
             { code: "189", name: "الرشيدي الميزان", issue: "تأخير متكرر في مواعيد التوريد المعتمدة", repeat: 5 },
-            { code: "302", name: "جهينة للصناعات الغذائية", issue: "توريد منتجات بدون تاريخ إنتاج واضح على الكرتونة", repeat: 1 }
+            { code: "302", name: "جهينة للصناعات الغذائية", issue: "توريد منتجات بدون تاريخ إنتاج واضح على الكرتونة", repeat: 1 },
+            { code: "110", name: "عبور لاند", issue: "تكرار وجود علب جبنة منتفخة وتالفة", repeat: 4 },
+            { code: "115", name: "دومتي", issue: "عجز في أعداد علب الكرتونة عند الاستلام", repeat: 2 },
+            { code: "140", name: "بيتي للألبان", issue: "تسييل متكرر في كراتين العصائر واللبن", repeat: 3 },
+            { code: "155", name: "فرج الله", issue: "تغير في الخواص الطبيعية لبعض مصنعات اللحوم", repeat: 6 },
+            { code: "201", name: "جهينة (عصائر)", issue: "توريد بضائع قريبة الانتهاء دون إذن مسبق", repeat: 2 },
+            { code: "222", name: "شركة مصطفى للمخللات", issue: "تكرار عجز الوزن الصافي لبرطمانات الزيتون والليمون", repeat: 4 },
+            { code: "305", name: "شيبسي (بيبسي كولا)", issue: "تكرار وجود كراتين مفتوحة وناقصة في شحنات الاستلام", repeat: 3 },
+            { code: "310", name: "كوفتي", issue: "توريد شحنات شاي بعبوات تالفة وغير مطابقة", repeat: 1 },
+            { code: "402", name: "إندومي", issue: "عدم تطابق الوزن الصافي لعلب الكرتون الكبيرة", repeat: 2 },
+            { code: "512", name: "ريحانة للأغذية", issue: "وجود أتربة وشوائب متكررة في أكياس الأرز المعبأ", repeat: 1 },
+            { code: "520", name: "الضحى", issue: "تأخر مستمر في توريد طلبيات السكر والدقيق الفاخر", repeat: 3 }
         ];
 
         // Block shortcuts like Ctrl+Shift+I, F12, Ctrl+U to prevent simple viewing of code
@@ -1075,7 +1453,7 @@
         }
 
         function searchCompany() {
-            const input = document.getElementById('companySearchInputQuery' || 'companySearchQuery').value.trim();
+            const input = document.getElementById('companySearchQuery').value.trim();
             const resultsDiv = document.getElementById('lookupResultsArea');
             
             if (!input) {
@@ -1146,6 +1524,319 @@
             }
             resultsDiv.style.display = 'block';
         }
+
+        // --- DYNAMIC STEPS GENERATORS ---
+
+        function updateNaturalSteps(totalQty, avg, standard, actual, comp) {
+            const box = document.getElementById('natStepsBox');
+            if (isNaN(totalQty) || isNaN(avg) || avg <= 0) {
+                box.innerHTML = `
+                    <h4>💡 طريقة ومراحل الحساب:</h4>
+                    <ol>
+                        <li>يتم تصفية العينات المختارة في المعمل للحصول على أوزان تصفية صافية.</li>
+                        <li>نجمع أوزان التصفية ونقسمها على عددها للحصول على <b>متوسط التصفية الصافي</b>.</li>
+                        <li><code>الكمية الفعلي</code> = متوسط التصفية الصافي × الكمية الكلية.</li>
+                        <li><b>شرط الاستاندر:</b> إذا تم تحديد وزن معياري (استاندر) وكان المتوسط أكبر منه، يتم اعتماد الاستاندر كوزن فعلي للاستلام، ويُحسب الفارق كـ <b>تعويض</b> للشركة.</li>
+                    </ol>
+                `;
+                return;
+            }
+
+            const calcActual = avg * totalQty;
+            let html = `<h4>💡 خطوات الحل الحسابية بالتفصيل:</h4><ol>`;
+            html += `<li><b>متوسط تصفية العينات الصافي:</b><br>متوسط وزن الجردل الصافي = <code>${avg.toFixed(3)}</code> كجم.</li>`;
+            html += `<li><b>حساب الوزن الإجمالي المقترح بالكامل:</b><br>
+                    الوزن الإجمالي = المتوسط الصافي (<code>${avg.toFixed(3)}</code> كجم) × الكمية الكلية الموردة (<code>${totalQty}</code> صفيحة)<br>
+                    الوزن الإجمالي المقترح = <code>${calcActual.toFixed(3)}</code> كجم.</li>`;
+
+            if (standard && avg > standard) {
+                html += `<li><b>مقارنة متوسط التصفية بالاستاندر المعياري:</b><br>
+                        بما أن متوسط العينات (<code>${avg.toFixed(3)}</code> كجم) <b>أكبر</b> من الاستاندر المحدد (<code>${standard.toFixed(3)}</code> كجم):<br>
+                        1.  الوزن الفعلي المعتمد للاستلام يثبت على الاستاندر:<br>
+                        <code>الفعلي المعتمد</code> = الاستاندر (<code>${standard.toFixed(3)}</code> كجم) × <code>${totalQty}</code> صفيحة = <b><code>${actual.toFixed(3)}</code> كجم</b>.<br>
+                        2.  يحسب الفارق الزائد كتعويض تعادلي للشركة:<br>
+                        <code>التعويض المستحق</code> = (المتوسط الصافي <code>${avg.toFixed(3)}</code> - الاستاندر <code>${standard.toFixed(3)}</code>) × <code>${totalQty}</code> صفيحة<br>
+                        <code>التعويض النهائي</code> = <code>${(avg - standard).toFixed(3)}</code> كجم × <code>${totalQty}</code> = <b><code>${comp.toFixed(3)}</code> كجم</b>.</li>`;
+            } else {
+                html += `<li><b>مقارنة متوسط التصفية بالاستاندر المعياري:</b><br>`;
+                if (standard) {
+                    html += `بما أن متوسط العينات (<code>${avg.toFixed(3)}</code> كجم) <b>أقل من أو يساوي</b> الاستاندر المحدد (<code>${standard.toFixed(3)}</code> كجم):<br>`;
+                } else {
+                    html += `بما أنه لم يتم تحديد وزن استاندر معياري:<br>`;
+                }
+                html += `يتم احتساب البضاعة بناءً على الوزن الفعلي الناتج مباشرة من التصفية:<br>
+                        <code>الفعلي النهائي المعتمد</code> = متوسط العينات (<code>${avg.toFixed(3)}</code> كجم) × <code>${totalQty}</code> صفيحة = <b><code>${actual.toFixed(3)}</code> كجم</b> (ولا يوجد تعويض مستقطع).</li>`;
+            }
+            html += `</ol>`;
+            box.innerHTML = html;
+        }
+
+        function updateProcessedSteps(totalQty, min, avg, standard, actual, comp) {
+            const box = document.getElementById('procStepsBox');
+            if (isNaN(totalQty) || isNaN(min) || min <= 0) {
+                box.innerHTML = `
+                    <h4>💡 طريقة ومراحل الحساب:</h4>
+                    <ol>
+                        <li>يتم تصفية العينات المختارة وتحديد الوزن الصافي لكل عينة في المعمل.</li>
+                        <li>يتم اختيار <b>أقل وزن تصفية</b> بين العينات وتعتمد عليه عملية الاستلام بالكامل.</li>
+                        <li><code>الكمية الفعلي</code> = أقل وزن تصفية × الكمية الكلية.</li>
+                        <li><b>شرط الاستاندر:</b> إذا كانت جميع العينات الموزونة أعلى من الوزن المعياري (الاستاندر)، يتم الاستلام على الاستاندر، ويُحسب التعويض بالمعادلة: <code>(متوسط العينات الصافي - أقل وزن تصفية) × الكمية الكلية</code>.</li>
+                    </ol>
+                `;
+                return;
+            }
+
+            const calcActual = min * totalQty;
+            let html = `<h4>💡 خطوات الحل الحسابية بالتفصيل:</h4><ol>`;
+            html += `<li><b>تحديد الوزن المعتمد الفردي (أقل وزن تصفية):</b><br>أقل وزن صافي تم رصده بالعينة هو <code>${min.toFixed(3)}</code> كجم.</li>`;
+            html += `<li><b>حساب الوزن الإجمالي المقترح بالكامل:</b><br>
+                    الوزن الإجمالي = أقل وزن تصفية (<code>${min.toFixed(3)}</code> كجم) × الكمية الكلية الموردة (<code>${totalQty}</code> جردل/عبوة)<br>
+                    الوزن الإجمالي المقترح = <code>${calcActual.toFixed(3)}</code> كجم.</li>`;
+
+            if (standard && min > standard) {
+                html += `<li><b>مقارنة العينات بالاستاندر المعياري:</b><br>
+                        بما أن جميع العينات أعلى من الاستاندر (أقل عينة <code>${min.toFixed(3)}</code> كجم أكبر من الاستاندر المعياري <code>${standard.toFixed(3)}</code> كجم):<br>
+                        1.  الوزن الفعلي المعتمد للاستلام يثبت على الاستاندر:<br>
+                        <code>الفعلي المعتمد</code> = الاستاندر (<code>${standard.toFixed(3)}</code> كجم) × <code>${totalQty}</code> جردل/عبوة = <b><code>${actual.toFixed(3)}</code> كجم</b>.<br>
+                        2.  يحسب الفارق كتعويض يستقطع للشركة بالمعادلة:<br>
+                        <code>التعويض المستحق</code> = (متوسط العينات الصافي <code>${avg.toFixed(3)}</code> - أقل وزن عينة <code>${min.toFixed(3)}</code>) × الكمية الكلية <code>${totalQty}</code><br>
+                        <code>التعويض النهائي</code> = (<code>${avg.toFixed(3)}</code> - <code>${min.toFixed(3)}</code>) × <code>${totalQty}</code> = <b><code>${comp.toFixed(3)}</code> كجم</b>.</li>`;
+            } else {
+                html += `<li><b>مقارنة العينات بالاستاندر المعياري:</b><br>`;
+                if (standard) {
+                    html += `بما أن هناك عينات أقل من أو تساوي وزن الاستاندر (أقل عينة صافي <code>${min.toFixed(3)}</code> كجم):<br>`;
+                } else {
+                    html += `بما أنه لم يتم تحديد وزن استاندر معياري:<br>`;
+                }
+                html += `يتم احتساب البضاعة بناءً على أقل وزن تصفية مباشرة:<br>
+                        <code>الفعلي النهائي المعتمد</code> = أقل وزن تصفية (<code>${min.toFixed(3)}</code> كجم) × <code>${totalQty}</code> جردل/عبوة = <b><code>${actual.toFixed(3)}</code> كجم</b> (ولا يوجد تعويض مستقطع).</li>`;
+            }
+            html += `</ol>`;
+            box.innerHTML = html;
+        }
+
+        function updatePastramiSteps(totalQty, gross, garlic, ratio, actual, bonus, isExcess) {
+            const box = document.getElementById('pastStepsBox');
+            if (isNaN(totalQty) || isNaN(gross) || isNaN(garlic) || gross <= 0) {
+                box.innerHTML = `
+                    <h4>💡 طريقة ومراحل الحساب:</h4>
+                    <ol>
+                        <li>نأخذ عينة مكونة من فردين (أعلى وأقل نسبة ثوم من حيث السمك)، ونزن العينة كاملة بالثوم (قائم).</li>
+                        <li>يتم خلي العينة تماماً ووزن الثوم المنفصل لمعرفة نسبة وجوده بالمعادلة: <code>(وزن الثوم ÷ وزن العينة قائم) × 100</code>.</li>
+                        <li>إذا كانت نسبة الثوم <b>20% أو أقل</b>: تستلم كامل البضاعة بوزنها الفعلي وبدون أي خصومات.</li>
+                        <li>إذا <b>تعدت النسبة 20%</b>: يُحسب فرق النسبة الزائد ويُضرب في إجمالي الكمية ليكون <b>بونص</b>، ويُخصم كذلك <b>تعويض ثابت قدره 500 جرام (0.500 كجم)</b> من الفعلي المعتمد النهائي.</li>
+                    </ol>
+                `;
+                return;
+            }
+
+            let html = `<h4>💡 خطوات الحل الحسابية بالتفصيل:</h4><ol>`;
+            html += `<li><b>حساب نسبة الثوم في عينة البسطرمة الفردية:</b><br>
+                    النسبة = (وزن الثوم <code>${garlic.toFixed(3)}</code> كجم ÷ وزن العينة قائم <code>${gross.toFixed(3)}</code> كجم) × 100 = <b><code>${ratio.toFixed(2)}%</code></b>.</li>`;
+
+            if (isExcess) {
+                const excessRatio = ratio - 20;
+                html += `<li><b>حساب استقطاعات العجز وتجاوز الحد (أكبر من 20%):</b><br>
+                        بما أن نسبة الثوم الفعلية (<code>${ratio.toFixed(2)}%</code>) أكبر من المسموح به (<code>20%</code>):<br>
+                        1.  النسبة الزائدة المستقطعة = <code>${ratio.toFixed(2)}%</code> - <code>20%</code> = <code>${excessRatio.toFixed(2)}%</code>.<br>
+                        2.  قيمة البونص المستحق للخصم = النسبة الزائدة (<code>${excessRatio.toFixed(2)}%</code>) × الكمية الكلية للشحنة (<code>${totalQty.toFixed(3)}</code> كجم)<br>
+                        <code>البونص المستقطع</code> = <code>${(excessRatio/100).toFixed(4)}</code> × <code>${totalQty.toFixed(3)}</code> = <b><code>${bonus.toFixed(3)}</code> كجم</b>.<br>
+                        3.  خصم تعويض إضافي ثابت للشركة = <b><code>0.500</code> كجم (500 جرام ثوم زائد)</b>.</li>`;
+                
+                html += `<li><b>حساب الفعلي المعتمد النهائي للاستلام:</b><br>
+                        <code>الوزن الفعلي النهائي</code> = الكمية الكلية (<code>${totalQty.toFixed(3)}</code> كجم) - البونص (<code>${bonus.toFixed(3)}</code> كجم) - تعويض ثابت (<code>0.500</code> كجم)<br>
+                        <code>الفعلي النهائي المعتمد</code> = <b><code>${actual.toFixed(3)}</code> كجم</b>.</li>`;
+            } else {
+                html += `<li><b>تقييم نسبة القبول للبسطرمة:</b><br>
+                        بما أن نسبة الثوم المحسوبة (<code>${ratio.toFixed(2)}%</code>) مقبولة وضمن النطاق الآمن المسموح به (<b>أقل من أو تساوي 20%</b>):<br>
+                        تستلم كامل الشحنة الموردة بوزنها الفعلي مباشرة بدون أي بونص أو تعويض ثابت خصم:<br>
+                        <code>الفعلي النهائي المعتمد</code> = <b><code>${actual.toFixed(3)}</code> كجم</b>.</li>`;
+            }
+            html += `</ol>`;
+            box.innerHTML = html;
+        }
+
+        function updateLuncheonSteps(pieces, avgW, totalWeight, actual, bonus, scenario) {
+            const box = document.getElementById('lunchStepsBox');
+            if (isNaN(pieces) || isNaN(avgW) || pieces <= 0 || avgW <= 0) {
+                box.innerHTML = `
+                    <h4>💡 طريقة ومراحل الحساب:</h4>
+                    <ol>
+                        <li>الوزن الصافي المعياري للفرد يتراوح بين 5.0 كجم كحد أدنى و 5.100 كجم كحد أقصى بعد خصم الفوارغ.</li>
+                        <li>إذا كان وزن الفرد الصافي <b>5.0 كجم أو أقل</b>: تستلم الكمية بالكامل كوزن فعلي.</li>
+                        <li>إذا كان الوزن الصافي <b>بين 5.0 كجم و 5.100 كجم</b>: يُعتمد 5.0 كجم كوزن فعلي، وتحسب الزيادة بالكامل كـ <b>بونص</b>.</li>
+                        <li>إذا كان الوزن الصافي <b>أكبر من 5.100 كجم</b>: يُثبت البونص عند الحد الأقصى (100 جرام للفرد)، ويُعتمد باقي الوزن الزائد لصالح <b>الوزن الفعلي</b> للشركة.</li>
+                    </ol>
+                `;
+                return;
+            }
+
+            let html = `<h4>💡 خطوات الحل الحسابية بالتفصيل:</h4><ol>`;
+            html += `<li><b>إجمالي وزن الشحنة الفعلي الموزون:</b><br>
+                    إجمالي الوزن الكلي = متوسط وزن الفرد (<code>${avgW.toFixed(3)}</code> كجم) × عدد الأفراد (<code>${pieces}</code> فرد) = <b><code>${totalWeight.toFixed(3)}</code> كجم</b>.</li>`;
+
+            if (scenario === 'under') {
+                html += `<li><b>تحليل وتقييم وزن الفرد (أقل من أو يساوي 5.0 كجم):</b><br>
+                        بما أن الوزن الصافي للفرد الواحد (<code>${avgW.toFixed(3)}</code> كجم) أقل من أو يساوي الحد الأدنى للاستلام (<code>5.000 كجم</code>):<br>
+                        يتم استلام البضاعة بالكامل كوزن فعلي لصالح الشركة دون احتساب أي بونص خصم:<br>
+                        - إجمالي الوزن الفعلي المعتمد = <code>${avgW.toFixed(3)}</code> كجم × <code>${pieces}</code> فرد = <b><code>${actual.toFixed(3)}</code> كجم</b>.<br>
+                        - إجمالي البونص المخصوم = <b><code>0.000</code> كجم</b>.</li>`;
+            } else if (scenario === 'bonus') {
+                const bonusPerPiece = avgW - 5.0;
+                html += `<li><b>تحليل وتقييم وزن الفرد (بين 5.000 كجم و 5.100 كجم):</b><br>
+                        بما أن الوزن الصافي للفرد (<code>${avgW.toFixed(3)}</code> كجم) يقع في نطاق البونص المقبول:<br>
+                        1.  الوزن الفعلي المعتمد للاستلام للفرد الواحد يثبت على الحد المسموح = <code>5.000 كجم</code>.<br>
+                        2.  البونص المستقطع للفرد الواحد = <code>${avgW.toFixed(3)}</code> - <code>5.000</code> = <code>${bonusPerPiece.toFixed(3)}</code> كجم (<code>${(bonusPerPiece*1000).toFixed(0)}</code> جرام).<br>
+                        3.  إجمالي الوزن الفعلي المعتمد المستلم = <code>5.000</code> كجم × <code>${pieces}</code> فرد = <b><code>${actual.toFixed(3)}</code> كجم</b>.<br>
+                        4.  إجمالي بونص الشحنة بالكامل = <code>${bonusPerPiece.toFixed(3)}</code> كجم × <code>${pieces}</code> فرد = <b><code>${bonus.toFixed(3)}</code> كجم</b>.</li>`;
+            } else {
+                const actualPerPiece = avgW - 0.100;
+                html += `<li><b>تحليل وتقييم وزن الفرد (يتخطى الحد الأقصى للبونص 5.100 كجم):</b><br>
+                        بما أن الوزن الصافي للفرد الواحد (<code>${avgW.toFixed(3)}</code> كجم) يتجاوز الحد المسموح للبونص:<br>
+                        1.  يتم تثبيت البونص المستحق للفرد عند الحد الأقصى له = <code>0.100 كجم</code> (100 جرام).<br>
+                        2.  الوزن الفعلي المستلم لصالح الشركة للفرد الواحد = وزن الفرد (<code>${avgW.toFixed(3)}</code>) - <code>0.100 كجم</code> بونص = <code>${actualPerPiece.toFixed(3)}</code> كجم.<br>
+                        3.  إجمالي الوزن الفعلي المعتمد المستلم = <code>${actualPerPiece.toFixed(3)}</code> كجم × <code>${pieces}</code> فرد = <b><code>${actual.toFixed(3)}</code> كجم</b>.<br>
+                        4.  إجمالي بونص الشحنة بالكامل = <code>0.100</code> كجم × <code>${pieces}</code> فرد = <b><code>${bonus.toFixed(3)}</code> كجم</b>.</li>`;
+            }
+            html += `</ol>`;
+            box.innerHTML = html;
+        }
+
+        function updateDrySteps(totalQty, sampleW, actual, comp, isDeficit, totalActualW, allowableW) {
+            const box = document.getElementById('dryStepsBox');
+            if (isNaN(totalQty) || totalQty <= 0) {
+                box.innerHTML = `
+                    <h4>💡 طريقة ومراحل الحساب:</h4>
+                    <ol>
+                        <li>نأخذ عينة اختبار وزنها الإجمالي 100 كيلو من البضاعة الموردة بالكامل ونقوم بوزنها بدقة.</li>
+                        <li>تُعطى نسبة سماح حتى 1 كجم، بحيث يكون الحد الأدنى المقبول للاستلام الآمن هو 99 كجم.</li>
+                        <li>إذا قل وزن عينة الـ 100 كجم عن 99 كجم: نحدد <b>العجز</b> بطرح الوزن الموزون من 99.</li>
+                        <li>نحسب عدد عينات البضاعة: <code>الكمية الكلية ÷ 100</code>.</li>
+                        <li><b>التعويض المستحق</b> = العجز × عدد العينات (ويقرب دائماً لأعلى رقم صحيح)، ويُطرح من الكمية الكلية لحساب <b>الفعلي</b>.</li>
+                    </ol>
+                `;
+                return;
+            }
+
+            // Check if sample weight is valid (Sample Method)
+            if (!isNaN(sampleW) && sampleW > 0) {
+                let html = `<h4>💡 خطوات الحل الحسابية بالتفصيل (طريقة عينة الـ 100 كجم):</h4><ol>`;
+                html += `<li><b>تقييم عينة الـ 100 كجم الموزونة:</b><br>
+                        الوزن الفعلي للعينة = <b><code>${sampleW.toFixed(3)}</code> كجم</b>.</li>`;
+
+                if (isDeficit) {
+                    const deficit = 99 - sampleW;
+                    const numSamples = totalQty / 100;
+                    const rawComp = deficit * numSamples;
+                    html += `<li><b>حساب قيمة العجز المكتشف:</b><br>
+                            بما أن العينة المسحوبة أقل من الحد المسموح للاستلام الآمن (99 كجم):<br>
+                            العجز لكل 100 كجم بضاعة = <code>99</code> كجم - <code>${sampleW.toFixed(3)}</code> كجم = <b><code>${deficit.toFixed(3)}</code> كجم عجز</b>.</li>`;
+                    
+                    html += `<li><b>حساب إجمالي التعويض المستقطع لكامل البضاعة:</b><br>
+                            1. عدد عينات الـ 100 كجم في الشحنة = إجمالي الكمية (<code>${totalQty.toFixed(1)}</code> كجم) ÷ 100 = <code>${numSamples.toFixed(2)}</code> عينة.<br>
+                            2. قيمة العجز غير المقرب = عجز العينة (<code>${deficit.toFixed(3)}</code> كجم) × عدد عينات الشحنة (<code>${numSamples.toFixed(2)}</code>) = <code>${rawComp.toFixed(3)}</code> كجم.<br>
+                            3. تطبيق شرط التقريب الإداري لأعلى رقم صحيح = <b><code>${comp}</code> كجم تعويض</b>.</li>`;
+                    
+                    html += `<li><b>حساب الكمية الفعلي النهائي المعتمد للاستلام:</b><br>
+                            <code>الفعلي النهائي</code> = الكمية الكلية (<code>${totalQty.toFixed(1)}</code> كجم) - التعويض (<code>${comp}</code> كجم)<br>
+                            <code>الفعلي النهائي المعتمد</code> = <b><code>${actual.toFixed(1)}</code> كجم</b>.</li>`;
+                } else {
+                    html += `<li><b>تقييم العجز والقبول:</b><br>
+                            بما أن وزن العينة الفعلي (<code>${sampleW.toFixed(3)}</code> كجم) أكبر من أو يساوي الحد المقبول (<b>99 كجم</b>):<br>
+                            تستلم الشحنة كاملة فوراً وبدون أي استقطاعات لتعويض العجز:<br>
+                            <code>الفعلي النهائي المعتمد</code> = <b><code>${actual.toFixed(1)}</code> كجم</b>.</li>`;
+                }
+                html += `</ol>`;
+                box.innerHTML = html;
+            } 
+            // Else, if total actual weight is valid (Total Weight Method)
+            else if (!isNaN(totalActualW) && totalActualW > 0) {
+                let html = `<h4>💡 خطوات الحل الحسابية بالتفصيل (طريقة وزن الشحنة بالكامل):</h4><ol>`;
+                html += `<li><b>حساب الحد الأدنى المقبول للوزن (نسبة سماح 1%):</b><br>
+                        الحد الأدنى المقبول = الكمية المطلوبة <code>${totalQty.toFixed(1)}</code> كجم × 0.99 = <b><code>${allowableW.toFixed(3)}</code> كجم</b>.</li>`;
+                html += `<li><b>تقييم وزن الشحنة الفعلي بالكامل:</b><br>
+                        الوزن الفعلي المستلم للشحنة = <b><code>${totalActualW.toFixed(3)}</code> كجم</b>.</li>`;
+
+                if (isDeficit) {
+                    const deficit = allowableW - totalActualW;
+                    html += `<li><b>حساب قيمة العجز المكتشف:</b><br>
+                            بما أن الوزن الفعلي (<code>${totalActualW.toFixed(3)}</code> كجم) أقل من الحد المقبول (<code>${allowableW.toFixed(3)}</code> كجم):<br>
+                            إجمالي العجز = <code>${allowableW.toFixed(3)}</code> كجم - <code>${totalActualW.toFixed(3)}</code> كجم = <b><code>${deficit.toFixed(3)}</code> كجم عجز</b>.</li>`;
+                    html += `<li><b>تطبيق شرط التقريب الإداري لأعلى رقم صحيح:</b><br>
+                            التعويض المطلوب خصمه = <b><code>${comp}</code> كجم تعويض</b>.</li>`;
+                    html += `<li><b>حساب الكمية الفعلي النهائي المعتمد للاستلام:</b><br>
+                            <code>الفعلي النهائي</code> = الكمية الكلية (<code>${totalQty.toFixed(1)}</code> كجم) - التعويض (<code>${comp}</code> كجم)<br>
+                            <code>الفعلي النهائي المعتمد</code> = <b><code>${actual.toFixed(1)}</code> كجم</b>.</li>`;
+                } else {
+                    html += `<li><b>تقييم العجز والقبول:</b><br>
+                            بما أن وزن الشحنة الفعلي بالكامل (<code>${totalActualW.toFixed(3)}</code> كجم) أكبر من أو يساوي الحد المقبول (<b><code>${allowableW.toFixed(3)}</code> كجم</b>):<br>
+                            تستلم الشحنة كاملة فوراً وبدون أي استقطاعات لتعويض العجز:<br>
+                            <code>الفعلي النهائي المعتمد</code> = <b><code>${actual.toFixed(1)}</code> كجم</b>.</li>`;
+                }
+                html += `</ol>`;
+                box.innerHTML = html;
+            } 
+            else {
+                // General fallback when weights are not typed yet
+                box.innerHTML = `
+                    <h4>💡 طريقة ومراحل الحساب للكميات:</h4>
+                    <ol>
+                        <li>الكمية الكلية المستلمة: <code>${totalQty.toFixed(1)}</code> كجم.</li>
+                        <li>طريقة الحساب الحالية: <b>${currentDryMethod === 'sample' ? 'عينة الـ 100 كجم بنسبة سماح 1 كجم' : 'وزن الشحنة بالكامل بنسبة سماح 1%'}</b>.</li>
+                        <li>يرجى إدخال الوزن المطلوب لعرض خطوات الحساب التفصيلية بالأرقام.</li>
+                    </ol>
+                `;
+            }
+        }
+
+        function updateCasingsSteps(totalQty, value, standard, actual, comp, isDeficit) {
+            const box = document.getElementById('caseStepsBox');
+            if (isNaN(totalQty) || isNaN(value) || totalQty <= 0 || value <= 0) {
+                box.innerHTML = `
+                    <h4>💡 طريقة ومراحل الحساب:</h4>
+                    <ol>
+                        <li><b>الهانك المعياري:</b> يجب أن يتسع لحشو 15 كجم لحم. <b>الممبار المعياري:</b> يجب أن يكون بطول 60 سم.</li>
+                        <li>يتم حشو أو قياس عينة فردية واحدة للتأكد من مطابقتها للاستاندر والمواصفات.</li>
+                        <li>إذا قل وزن حشو الهانك أو طول الممبار عن الاستاندر، نحدد نسبة العجز: <code>(المعياري - المقاس الفعلي) ÷ المعياري</code>.</li>
+                        <li><b>عدد حبات التعويض</b> = نسبة العجز × الكمية الكلية (وتقرب لأعلى حبة صحيحة دائماً لضمان الدقة ومصلحة الاستلام).</li>
+                        <li><b>العدد الفعلي المعتمد</b> = الكمية الكلية - عدد حبات التعويض.</li>
+                    </ol>
+                `;
+                return;
+            }
+
+            const unit = currentCasingType === 'hank' ? 'كجم لحمة' : 'سم مقاس';
+            let html = `<h4>💡 خطوات الحل الحسابية بالتفصيل:</h4><ol>`;
+            html += `<li><b>تقييم العينة المجرية:</b><br>
+                    الاستاندر القياسي المطلوب لـ ${currentCasingType === 'hank' ? 'الهانك' : 'الممبار'} = <code>${standard}</code> ${unit}.<br>
+                    المحقق الفعلي بالعينة الفردية = <code>${value.toFixed(1)}</code> ${unit}.</li>`;
+
+            if (isDeficit) {
+                const diff = standard - value;
+                const ratio = diff / standard;
+                const rawComp = totalQty * ratio;
+                html += `<li><b>حساب عجز العينة الفردي والنسبة المئوية:</b><br>
+                        العجز الفردي = <code>${standard}</code> - <code>${value.toFixed(1)}</code> = <b><code>${diff.toFixed(1)}</code></b> ${unit}.<br>
+                        نسبة العجز الإجمالية = <code>${diff.toFixed(1)}</code> ÷ الاستاندر <code>${standard}</code> = <b><code>${(ratio * 100).toFixed(2)}%</code></b>.</li>`;
+
+                html += `<li><b>حساب حبات التعويض على كامل الشحنة:</b><br>
+                        1.  العجز غير المقرب = الكمية الكلية (<code>${totalQty}</code> حبة) × نسبة عجز العينة (<code>${(ratio*100).toFixed(2)}%</code>) = <code>${rawComp.toFixed(3)}</code> حبة.<br>
+                        2.  تطبيق قاعدة التقريب الإداري المعتمد لأعلى حبة صحيحة دائماً = <b><code>${comp}</code> حبة تعويض خصم</b>.</li>`;
+                
+                html += `<li><b>حساب العدد الفعلي النهائي المعتمد للاستلام:</b><br>
+                        <code>العدد الفعلي المعتمد</code> = الكمية الكلية (<code>${totalQty}</code> حبة) - حبات التعويض (<code>${comp}</code> حبة)<br>
+                        <code>العدد الفعلي النهائي المعتمد</code> = <b><code>${actual}</code> حبة</b>.</li>`;
+            } else {
+                html += `<li><b>تقييم القبول والاستلام للشحنة:</b><br>
+                        بما أن نتيجة العينة (<code>${value.toFixed(1)}</code> ${unit}) مطابقة أو تزيد عن الاستاندر (<code>${standard}</code> ${unit}):<br>
+                        تستلم البضاعة بالكامل بدون أي خصم لحبات التعويض:<br>
+                        <code>العدد الفعلي النهائي المعتمد</code> = <b><code>${actual}</code> حبة</b>.</li>`;
+            }
+            html += `</ol>`;
+            box.innerHTML = html;
+        }
+
+        // --- CALCULATORS LOGIC ---
 
         // 1. Natural Cheese Calculations
         function calculateNatural() {
@@ -1221,6 +1912,59 @@
 
             // Update Dynamic Steps
             updateProcessedSteps(totalQty, min, avg, standard, actual, comp);
+        }
+
+        // 3. Roumi Cheese Calculations (No Steps box as it is pure Date check)
+        function calculateRoumi() {
+            const prodDate = getWidgetDate('roumiProdDate');
+            const resultsSec = document.getElementById('roumiResults');
+            
+            if (!prodDate) {
+                resultsSec.style.display = 'none';
+                return;
+            }
+
+            const today = new Date();
+            today.setHours(0,0,0,0);
+            const diffTime = today - prodDate;
+            const diffDays = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
+            
+            const maxDays = 540; // 18 شهرا
+            const remaining = maxDays - diffDays;
+
+            let cName = "-";
+            let cColor = "blue";
+            let alertHtml = "";
+
+            if (diffDays <= 60) {
+                cName = "جبن جديد";
+                cColor = "green";
+            } else if (diffDays <= 150) {
+                cName = "جبن متوسط";
+                cColor = "blue";
+            } else if (diffDays <= 270) {
+                cName = "جبن قديم";
+                cColor = "orange";
+            } else if (diffDays <= 540) {
+                cName = "جبن قديم"; 
+                cColor = "red";
+                alertHtml += `<div class="alert-banner orange">⚠️ ملاحظة: المنتج تجاوز نصف مدة صلاحيته (تجاوز 270 يوم) ويجب الحصول على موافقة استلام.</div>`;
+            } else {
+                cName = "منتهي الصلاحية";
+                cColor = "red";
+                alertHtml += `<div class="alert-banner red">🛑 تحذير شديد: الجبن منتهي الصلاحية بالكامل (تجاوز الـ 18 شهراً)!</div>`;
+            }
+
+            if (diffDays <= 540 && remaining <= 15 && remaining > 0) {
+                alertHtml += `<div class="alert-banner yellow">⏳ تنبيه الربع مدة: متبقي ${remaining} يوم على انتهاء صلاحية المنتج بالكامل!</div>`;
+            }
+
+            const classBox = document.getElementById('roumiClassBox');
+            classBox.className = "result-box " + cColor;
+            document.getElementById('roumiResClass').innerText = cName;
+            document.getElementById('roumiResDays').innerText = diffDays + ' يوم';
+            document.getElementById('roumiAlerts').innerHTML = alertHtml;
+            resultsSec.style.display = 'block';
         }
 
         // 4. Pastrami Calculations
