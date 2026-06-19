@@ -1,6 +1,6 @@
 {
-  "name": "حاسبة الإستلام - فتح الله ماركت",
-  "short_name": "حاسبة الإستلام",
+  "name": "حاسبة الإستلام - TEST",
+  "short_name": "TEST - حاسبة الإستلام",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#111827",
