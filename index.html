@@ -1044,7 +1044,7 @@
             if (e.ctrlKey && e.shiftKey && e.keyCode == 'J'.charCodeAt(0)) { return false; }
             if (e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) { return false; } 
         }
-
+        // Custom Beautiful Mobile Notification instead of browser alert()
         function showNotification(message) {
             const toast = document.getElementById('appToast');
             toast.innerText = message;
@@ -1081,10 +1081,13 @@
                 `;
                 throw new Error("نظام الحماية: تم الكشف عن التلاعب بالحقوق الفكرية للمطور محمد طارق.");
             }
+
+            // Real-time loop protection
             setInterval(auditCopyright, 1500);
             window.addEventListener('load', auditCopyright);
         })();
 
+        // --- NEW SMART EXCEL PARSER (Fuzzy Logic for Pivot Tables) ---
         function handleExcelUpload(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -1097,14 +1100,13 @@
                     const firstSheetName = workbook.SheetNames[0];
                     const worksheet = workbook.Sheets[firstSheetName];
                     
-                    // القراءة الخام للشيت بدون افتراض هيدرات (عشان نفهم الـ Pivot Tables)
                     const json = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
                     
                     let companies = [];
-                    let currentName = "";
-                    let currentCode = "";
+                    let cName = "";
+                    let cCode = "";
 
-                    // فلترة الصفوف الفاضية تماماً
+                    // Filter out completely empty rows
                     const validRows = json.filter(row => row.some(cell => String(cell).trim() !== ""));
 
                     if (validRows.length < 2) {
@@ -1112,72 +1114,79 @@
                         return;
                     }
 
-                    // البحث عن بداية الجدول الحقيقي (تخطي العناوين الرئيسية المدمجة)
-                    let startIdx = 0;
-                    for (let i = 0; i < Math.min(15, validRows.length); i++) {
-                        let rowStr = validRows[i].join(" ").toLowerCase();
-                        if (rowStr.includes("مورد") || rowStr.includes("تسميات") || rowStr.includes("شركة") || rowStr.includes("مخالف")) {
-                            startIdx = i + 1;
-                            break;
-                        }
-                    }
-
-                    // قراءة الصفوف بذكاء (نظام الـ Pivot Table)
-                    for (let r = startIdx; r < validRows.length; r++) {
+                    for (let r = 0; r < validRows.length; r++) {
                         const row = validRows[r];
                         const rowStr = row.join(" ").toLowerCase();
 
-                        // إيقاف القراءة عند الوصول للإجمالي الكلي
+                        // Stop parsing if we hit the grand total
                         if (rowStr.includes("إجمالي كلي") || rowStr.includes("grand total")) {
                             break;
                         }
 
-                        // التكرار دايماً بيكون في آخر عمود فيه رقم في الـ Pivot Table
-                        let repeat = 1;
-                        for (let c = row.length - 1; c >= 0; c--) {
-                            let val = parseInt(String(row[c]).trim(), 10);
+                        // Clean and filter cells
+                        let cells = row.map(c => String(c).trim()).filter(c => c !== "");
+                        if(cells.length === 0) continue;
+
+                        // Ignore Header rows or Subtotals
+                        const combinedText = cells.join(" ").toLowerCase();
+                        if(combinedText.includes("إجمالي") || combinedText.includes("total") || combinedText.includes("تسميات")) {
+                            continue;
+                        }
+
+                        let repeat = 0;
+                        // Find the repeat count (always the last numeric value in a valid row)
+                        for (let c = cells.length - 1; c >= 0; c--) {
+                            let val = parseInt(cells[c], 10);
                             if (!isNaN(val) && val > 0) {
                                 repeat = val;
+                                cells.splice(c, 1); // Remove the number so we only have text left
                                 break;
                             }
                         }
 
-                        // استخراج الداتا (الكود، الاسم، المخالفة)
-                        let code = String(row[0]).trim();
-                        let name = String(row[1]).trim();
-                        let issue = String(row[2]).trim();
-
-                        // توريث اسم الشركة للصفوف اللي تحتها لو كانت فاضية (طبيعة الـ Pivot)
-                        if (name !== "" && !name.includes("إجمالي") && !name.includes("total")) {
-                            currentName = name;
-                            currentCode = code;
+                        // If no repeat found, it's likely a Parent Row (Company Name)
+                        if (repeat === 0) {
+                            cName = cells.join(" ");
+                            // Extract numbers as code (e.g., from "121 الصقر")
+                            cCode = cName.match(/\d+/) ? cName.match(/\d+/)[0] : "";
+                            // Clean the name from numbers and dashes
+                            cName = cName.replace(/\d+/g, '').replace(/[-_]/g, '').trim();
                         } else {
-                            name = currentName;
-                            code = currentCode;
-                        }
+                            // It's an Issue Row (or a flat row with everything)
+                            let cIssue = "";
+                            
+                            if (cells.length === 1) {
+                                // Pivot child row
+                                cIssue = cells[0];
+                            } else if (cells.length >= 2) {
+                                // Flat row: Col 0 is name, Col 1 is issue
+                                cName = cells[0];
+                                cIssue = cells.slice(1).join(" ");
+                                cCode = cName.match(/\d+/) ? cName.match(/\d+/)[0] : "";
+                                cName = cName.replace(/\d+/g, '').replace(/[-_]/g, '').trim();
+                            } else {
+                                cIssue = "مخالفة مسجلة";
+                            }
 
-                        // تجاهل صفوف "إجمالي الشركة" الفرعية، لأننا محتاجين المخالفة نفسها بس
-                        if (!issue || issue === "" || issue.toLowerCase().includes("إجمالي") || issue.toLowerCase().includes("total") || issue === name) {
-                            continue;
-                        }
-
-                        if (name !== "") {
-                            // إضافة الشركة لو مكنتش موجودة بنفس المخالفة
-                            const exists = companies.find(c => c.name === name && c.issue === issue);
-                            if (!exists) {
-                                companies.push({
-                                    code: code,
-                                    name: name,
-                                    issue: issue,
-                                    repeat: repeat
-                                });
+                            // Don't add if issue is the exact same as company name (pivot weirdness)
+                            if (cName && cIssue && cIssue !== cName) {
+                                // Check if exact same violation exists to avoid dupes
+                                const exists = companies.find(comp => comp.name === cName && comp.issue === cIssue);
+                                if (!exists) {
+                                    companies.push({
+                                        name: cName || "شركة غير معروفة",
+                                        code: cCode,
+                                        issue: cIssue,
+                                        repeat: repeat
+                                    });
+                                }
                             }
                         }
                     }
 
                     if (companies.length > 0) {
                         localStorage.setItem('fathalla_check100_db', JSON.stringify(companies));
-                        showNotification(`تم حفظ ${companies.length} شركة مخالفة بنجاح!`);
+                        showNotification(`تم حفظ ${companies.length} مخالفة بنجاح!`);
                         updateDbStatus();
                         searchCompany();
                     } else {
