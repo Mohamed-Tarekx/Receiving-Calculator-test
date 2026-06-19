@@ -1,0 +1,1594 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>حاسبة الإستلام - فتح الله ماركت</title>
+    
+    <!-- وسوم تشغيل التطبيق في شاشة كاملة وبمظهر مستقل على الآيفون iOS -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="حاسبة الإستلام">
+    <link rel="apple-touch-icon" href="./logo.png">
+    
+    <!-- ربط ملف تعريف هوية التطبيق PWA للاندرويد والآيفون -->
+    <link rel="manifest" href="./manifest.json">
+
+    <!-- تحميل مكتبة SheetJS لقراءة ملفات الإكسيل بالكامل بدون إنترنت أوفلاين -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <style>
+        :root {
+            --primary: #f48120; /* Fathalla Orange */
+            --primary-dark: #d66810;
+            --bg-main: #f8fafc;
+            --bg-card: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --success: #10b981;
+            --success-bg: #ecfdf5;
+            --success-border: #a7f3d0;
+            --warning: #f59e0b;
+            --warning-bg: #fffbeb;
+            --warning-border: #fde68a;
+            --danger: #ef4444;
+            --danger-bg: #fef2f2;
+            --danger-border: #fca5a5;
+            --blue-bg: #fff7ed; /* Light orange/cream tone to match brand */
+            --blue-border: #ffedd5;
+            --dark-header: #111827; /* Fathalla Brand Black/Charcoal */
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none; /* Prevent easy copying of text */
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            padding-bottom: 80px; /* Space for fixed footer */
+        }
+
+        /* Header Style */
+        header {
+            background-color: var(--dark-header);
+            color: white;
+            padding: 16px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            border-bottom: 4px solid var(--primary);
+        }
+
+        .header-container {
+            max-width: 480px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header-title {
+            font-size: 1.15rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-title svg {
+            color: var(--primary);
+        }
+
+        .home-btn {
+            background-color: #1f2937;
+            border: 1px solid #374151;
+            color: var(--primary);
+            padding: 8px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 42px;
+            height: 42px;
+            transition: all 0.2s;
+        }
+
+        .home-btn:active {
+            transform: scale(0.9);
+            background-color: var(--primary);
+            color: white;
+        }
+
+        /* Container & Grid Layout */
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 16px;
+        }
+
+        /* Main App Titles */
+        .main-title {
+            font-size: 1.7rem;
+            font-weight: 850;
+            color: var(--dark-header);
+            margin-top: 8px;
+            margin-bottom: 10px;
+            border-right: 5px solid var(--primary);
+            padding-right: 12px;
+            letter-spacing: -0.5px;
+        }
+
+        .welcome-msg {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+            font-weight: 500;
+            line-height: 1.4;
+        }
+
+        .menu-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        /* Card Button style without icon */
+        .menu-card {
+            background-color: var(--bg-card);
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 20px 18px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            text-align: right;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .menu-card:active {
+            background-color: var(--blue-bg);
+            border-color: var(--primary);
+            transform: scale(0.98);
+        }
+
+        .card-title {
+            font-size: 1.15rem;
+            font-weight: 750;
+            color: var(--dark-header);
+            flex: 1;
+        }
+
+        .arrow-left {
+            color: var(--primary);
+            font-weight: bold;
+            font-size: 1.1rem;
+            margin-right: 10px;
+        }
+
+        /* Module Forms & Inputs */
+        .module-view {
+            display: none;
+            animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .module-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .back-btn {
+            background: #f1f5f9;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            padding: 8px;
+            display: flex;
+            align-items: center;
+            color: var(--dark-header);
+            transition: background 0.2s;
+        }
+
+        .back-btn:active {
+            background-color: var(--blue-bg);
+            color: var(--primary);
+        }
+
+        .module-title {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: var(--dark-header);
+        }
+
+        .info-box {
+            background-color: var(--blue-bg);
+            border-right: 4px solid var(--primary);
+            border-left: 1px solid var(--blue-border);
+            border-top: 1px solid var(--blue-border);
+            border-bottom: 1px solid var(--blue-border);
+            color: var(--dark-header);
+            padding: 14px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+            line-height: 1.5;
+            font-weight: 500;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #334155;
+            font-size: 0.95rem;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 14px;
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            font-size: 1.05rem;
+            outline: none;
+            background-color: white;
+            transition: all 0.2s;
+            color: var(--dark-header);
+            font-weight: 600;
+        }
+
+        input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(244, 129, 32, 0.15);
+        }
+
+        /* --- PREMIUM CUSTOM DATE WIDGET STYLES --- */
+        .custom-date-container {
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            background-color: white;
+            padding: 4px 8px;
+            transition: all 0.2s;
+        }
+        
+        .custom-date-container:focus-within {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(244, 129, 32, 0.15);
+        }
+        
+        .date-inputs-row {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            direction: ltr; /* Keeps layout Day / Month / Year left-to-right visually */
+        }
+        
+        .date-inputs-row input[type="number"] {
+            border: none !important;
+            background: transparent !important;
+            padding: 10px 4px !important;
+            font-size: 1.05rem !important;
+            text-align: center;
+            width: 100%;
+            box-shadow: none !important;
+            outline: none !important;
+            color: var(--dark-header);
+            font-weight: 600;
+            -moz-appearance: textfield; /* Remove numeric spinner arrows */
+        }
+        
+        .date-inputs-row input[type="number"]::-webkit-outer-spin-button,
+        .date-inputs-row input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        
+        .date-inputs-row .date-day {
+            flex: 1.5;
+        }
+        
+        .date-inputs-row .date-month {
+            flex: 1.5;
+        }
+        
+        .date-inputs-row .date-year {
+            flex: 2.2;
+        }
+        
+        .date-slash {
+            color: var(--text-muted);
+            font-weight: bold;
+            font-size: 1.2rem;
+            user-select: none;
+        }
+        
+        .calendar-trigger-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 44px;
+            color: var(--primary);
+            cursor: pointer;
+            border-left: 1px solid #e2e8f0;
+            padding-left: 8px;
+            margin-left: 4px;
+        }
+        
+        .hidden-date-picker {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+            padding: 0 !important;
+            margin: 0 !important;
+            border: none !important;
+        }
+
+        /* --- EXPLANATION STEPS BOX --- */
+        .steps-box {
+            background-color: #f8fafc;
+            border-right: 4px solid var(--primary);
+            border-left: 1px solid #e2e8f0;
+            border-top: 1px solid #e2e8f0;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 16px;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            margin-top: 24px;
+            color: #475569;
+            line-height: 1.6;
+        }
+
+        .steps-box h4 {
+            font-weight: 800;
+            color: var(--dark-header);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 1rem;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 8px;
+        }
+
+        .steps-box ol {
+            padding-right: 20px;
+        }
+
+        .steps-box li {
+            margin-bottom: 10px;
+        }
+
+        .steps-box code {
+            background-color: #fee2e2;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-weight: bold;
+            color: var(--primary-dark);
+            font-size: 0.95rem;
+        }
+
+        /* Dynamic Sample Weights Container */
+        .samples-container {
+            background-color: #f8fafc;
+            padding: 16px;
+            border-radius: 14px;
+            border: 2px solid #e2e8f0;
+            margin-bottom: 20px;
+        }
+
+        .samples-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+
+        .add-sample-btn {
+            background-color: var(--dark-header);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .add-sample-btn:active {
+            background-color: var(--primary);
+        }
+
+        /* Results Display */
+        .results-section {
+            margin-top: 28px;
+            border-top: 2px dashed #cbd5e1;
+            padding-top: 20px;
+        }
+
+        .results-title {
+            font-size: 1.25rem;
+            font-weight: 800;
+            margin-bottom: 14px;
+            color: var(--dark-header);
+        }
+
+        .result-box {
+            padding: 16px;
+            border-radius: 10px;
+            border: 1px solid #cbd5e1;
+            margin-bottom: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        }
+
+        .result-box.blue {
+            background-color: #f8fafc;
+            color: var(--dark-header);
+            border-color: #e2e8f0;
+            border-right: 5px solid var(--dark-header);
+        }
+
+        .result-box.green {
+            background-color: var(--success-bg);
+            color: #065f46;
+            border-color: var(--success-border);
+            border-right: 5px solid var(--success);
+        }
+
+        .result-box.orange {
+            background-color: var(--warning-bg);
+            color: #92400e;
+            border-color: var(--warning-border);
+            border-right: 5px solid var(--warning);
+        }
+
+        .result-box.red {
+            background-color: var(--danger-bg);
+            color: #991b1b;
+            border-color: var(--danger-border);
+            border-right: 5px solid var(--danger);
+        }
+
+        .result-box-label {
+            font-size: 0.85rem;
+            font-weight: 700;
+            opacity: 0.9;
+            margin-bottom: 6px;
+        }
+
+        .result-box-value {
+            font-size: 1.7rem;
+            font-weight: 800;
+        }
+
+        .alert-banner {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px;
+            border-radius: 10px;
+            font-weight: 700;
+            margin-top: 12px;
+            line-height: 1.4;
+            font-size: 0.95rem;
+        }
+
+        .alert-banner.red {
+            background-color: var(--danger-bg);
+            color: var(--danger);
+            border: 1px solid var(--danger-border);
+        }
+
+        .alert-banner.green {
+            background-color: var(--success-bg);
+            color: var(--success);
+            border: 1px solid var(--success-border);
+        }
+
+        .alert-banner.orange {
+            background-color: var(--warning-bg);
+            color: #d97706;
+            border: 1px solid var(--warning-border);
+        }
+
+        .alert-banner.yellow {
+            background-color: #fef9c3;
+            color: #854d0e;
+            border: 1px solid #fef08a;
+        }
+
+        /* Segment Switch (e.g., Hank vs Mombar) */
+        .segment-control {
+            display: flex;
+            background-color: #e2e8f0;
+            padding: 4px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .segment-btn {
+            flex: 1;
+            border: none;
+            padding: 12px;
+            background: none;
+            font-weight: bold;
+            font-size: 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #475569;
+        }
+
+        .segment-btn.active {
+            background-color: white;
+            color: var(--primary-dark);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+        }
+
+        /* Toast notifications */
+        .app-toast {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background-color: var(--dark-header);
+            color: #ffffff;
+            padding: 14px 28px;
+            border-radius: 50px;
+            font-weight: bold;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3);
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 1000;
+            text-align: center;
+            max-width: 90%;
+            pointer-events: none;
+            border: 2px solid var(--primary);
+        }
+        
+        .app-toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* Drag and Drop Premium styling */
+        .excel-drop-zone {
+            border: 2px dashed var(--primary);
+            background-color: #fffaf5;
+            border-radius: 14px;
+            padding: 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .excel-drop-zone:active, .excel-drop-zone.dragover {
+            background-color: var(--blue-bg);
+            border-color: var(--primary-dark);
+        }
+
+        /* FIXED PROTECTED FOOTER WITH MOBILE WORD-WRAP FIX */
+        .secure-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: var(--dark-header);
+            color: #94a3b8;
+            text-align: center;
+            padding: 14px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            border-top: 3px solid var(--primary);
+            z-index: 1000;
+            box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.1);
+            letter-spacing: 0.5px;
+            white-space: nowrap; /* FORCE ONE SINGLE LINE ALWAYS */
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .secure-footer span {
+            color: var(--primary);
+            font-weight: bold;
+        }
+
+        /* Animations */
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body oncontextmenu="return false;"> <!-- Block Right Click -->
+
+    <!-- Header -->
+    <header>
+        <div class="header-container">
+            <div class="header-title">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><line x1="9" y1="22" x2="9" y2="16"></line><line x1="9" y1="16" x2="15" y2="16"></line><line x1="15" y1="16" x2="15" y2="22"></line><line x1="15" y1="2" x2="15" y2="6"></line><line x1="9" y1="2" x2="9" y2="6"></line><line x1="18" y1="6" x2="6" y2="6"></line></svg>
+                حاسبة الإستلام - فتح الله ماركت
+            </div>
+            <button id="mainHomeBtn" class="home-btn" style="display: none;" onclick="showHome()">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+            </button>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Main Navigation Menu -->
+        <div id="homeView">
+            <h2 class="main-title">حاسبة الإستلام</h2>
+            <p class="welcome-msg">مرحباً بك في النظام الذكي لحسابات البضائع المستلمة بدقة وسهولة:</p>
+            <div class="menu-grid">
+                <!-- NEW LOOKUP MODULE CARD -->
+                <button class="menu-card" onclick="openModule('check100')" style="border: 2px solid var(--primary); background-color: #fffaf5;">
+                    <span class="card-title" style="color: var(--primary-dark);">🚨 قائمة تشييك 100%</span>
+                    <span class="arrow-left" style="color: var(--primary-dark);">&#10094;</span>
+                </button>
+                <button class="menu-card" onclick="openModule('natural')">
+                    <span class="card-title">الجبن الطبيعي</span>
+                    <span class="arrow-left">&#10094;</span>
+                </button>
+                <button class="menu-card" onclick="openModule('processed')">
+                    <span class="card-title">الجبن المستحلب / المخللات</span>
+                    <span class="arrow-left">&#10094;</span>
+                </button>
+                <button class="menu-card" onclick="openModule('roumi')">
+                    <span class="card-title">الجبن الرومي</span>
+                    <span class="arrow-left">&#10094;</span>
+                </button>
+                <button class="menu-card" onclick="openModule('pastrami')">
+                    <span class="card-title">البسطرمة</span>
+                    <span class="arrow-left">&#10094;</span>
+                </button>
+                <button class="menu-card" onclick="openModule('luncheon')">
+                    <span class="card-title">اللانشون (المراعي)</span>
+                    <span class="arrow-left">&#10094;</span>
+                </button>
+                <button class="menu-card" onclick="openModule('dry')">
+                    <span class="card-title">الرز والسكر والدقيق</span>
+                    <span class="arrow-left">&#10094;</span>
+                </button>
+                <button class="menu-card" onclick="openModule('casings')">
+                    <span class="card-title">الهانك والممبار</span>
+                    <span class="arrow-left">&#10094;</span>
+                </button>
+                <button class="menu-card" onclick="openModule('expiry')">
+                    <span class="card-title">حاسبة صلاحية المنتجات</span>
+                    <span class="arrow-left">&#10094;</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 0. Check 100% Lookup Module -->
+        <div id="check100View" class="module-view">
+            <div class="module-header">
+                <button class="back-btn" onclick="showHome()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
+                <span class="module-title">قائمة تشييك 100%</span>
+            </div>
+            <div class="info-box">فحص حالة الموردين والشركات للتحقق إذا كانت الشحنة تتطلب تشييكاً كاملاً 100% بسبب مخالفات سابقة.</div>
+            
+            <!-- Excel file uploader widget -->
+            <div class="form-group">
+                <label>تحديث قاعدة البيانات (اختياري)</label>
+                <div class="excel-drop-zone" onclick="document.getElementById('excelFileInput').click()">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin: 0 auto 8px; color: var(--primary);"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                    <span style="font-weight: 700; font-size: 0.95rem; color: var(--dark-header);">اضغط هنا لرفع ملف كشف الشركات الـ Excel</span>
+                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">يقبل ملفات .xlsx أو .xls (قائمة تشيك 100%)</p>
+                    <input type="file" id="excelFileInput" accept=".xlsx, .xls" style="display: none;" onchange="handleExcelUpload(event)">
+                </div>
+            </div>
+
+            <!-- Database status indicator and reset -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; font-size: 0.85rem;">
+                <span id="dbStatusBadge" style="font-weight: 700;">حالة قاعدة البيانات: 🟠 افتراضية (تحتاج لرفع ملف)</span>
+                <button id="clearDbBtn" style="background: none; border: none; color: var(--danger); font-weight: bold; cursor: pointer; display: none;" onclick="clearCustomDb()">🗑️ حذف وتصفير الكشف</button>
+            </div>
+
+            <!-- Real-time search inputs -->
+            <div class="form-group">
+                <label>ابحث باسم الشركة أو كود المورد</label>
+                <input type="text" id="companySearchQuery" placeholder="مثال: المراعي، بيتي، أو كود مثل 3410" oninput="searchCompany()">
+            </div>
+
+            <!-- Lookup Results Area -->
+            <div class="results-section" id="lookupResultsArea" style="display: none;">
+                <h3 class="results-title">نتيجة الاستعلام:</h3>
+                <div id="lookupResultsContent"></div>
+            </div>
+
+            <!-- Explanatory system notes -->
+            <div class="steps-box">
+                <h4>💡 نظام الحماية والتشييك 100%:</h4>
+                <ol>
+                    <li>الشركات المدرجة في هذا الكشف يجرى فحص وتوزين كافة منتجاتها بنسبة 100% دون أي فحص عشوائي.</li>
+                    <li>رقم التكرار يمثل تكرر المخالفات للشركة (كلما زاد الرقم، كانت مشاكل المورد أعلى وتتطلب دقة قصوى أثناء الاستلام).</li>
+                </ol>
+            </div>
+        </div>
+
+        <!-- 1. Natural Cheese Module -->
+        <div id="naturalView" class="module-view">
+            <!-- Handled statically inside base content -->
+        </div>
+
+        <!-- 2. Processed Cheese / Pickles Module -->
+        <div id="processedView" class="module-view">
+            <!-- Handled statically inside base content -->
+        </div>
+
+        <!-- 3. Roumi Cheese Module -->
+        <div id="roumiView" class="module-view">
+            <!-- Handled statically inside base content -->
+        </div>
+
+        <!-- 4. Pastrami Module -->
+        <div id="pastramiView" class="module-view">
+            <!-- Handled statically inside base content -->
+        </div>
+
+        <!-- 5. Luncheon Module -->
+        <div id="luncheonView" class="module-view">
+            <!-- Handled statically inside base content -->
+        </div>
+
+        <!-- 6. Dry Goods Module -->
+        <div id="dryView" class="module-view">
+            <!-- Handled statically inside base content -->
+        </div>
+
+        <!-- 7. Casings Module -->
+        <div id="casingsView" class="module-view">
+            <!-- Handled statically inside base content -->
+        </div>
+
+        <!-- 8. Expiry Calculator Module -->
+        <div id="expiryView" class="module-view">
+            <!-- Handled statically inside base content -->
+        </div>
+    </div>
+
+    <!-- Notification Toast system -->
+    <div id="appToast" class="app-toast"></div>
+
+    <!-- Protected dynamic footer designed by Mohamed Tarek & Abdallah Mohamed -->
+    <footer id="devFooter" class="secure-footer">
+        فكرة عبدالله محمد & محمد طارق | <span>تصميم | محمد طارق</span>
+    </footer>
+
+    <script>
+        let currentCasingType = 'hank';
+        let currentDryMethod = 'sample'; // Default method for Dry Goods
+
+        // Fallback default mock lookup list of 100% checked companies (For immediate out of the box playability!)
+        const defaultCompanies = [
+            { code: "121", name: "الصقر روتانا", issue: "توريد بضائع اكسبير وتالفة", repeat: 1 },
+            { code: "105", name: "المراعي للألبان", issue: "عدم الالتزام بدرجة حرارة التبريد أثناء التوريد", repeat: 3 },
+            { code: "244", name: "حلواني اخوان", issue: "وجود عجز متكرر في وزن العبوات الصافية", repeat: 2 },
+            { code: "189", name: "الرشيدي الميزان", issue: "تأخير متكرر في مواعيد التوريد المعتمدة", repeat: 5 },
+            { code: "302", name: "جهينة للصناعات الغذائية", issue: "توريد منتجات بدون تاريخ إنتاج واضح على الكرتونة", repeat: 1 }
+        ];
+
+        // Block shortcuts like Ctrl+Shift+I, F12, Ctrl+U to prevent simple viewing of code
+        document.onkeydown = function(e) {
+            if (e.keyCode == 123) { return false; } // F12
+            if (e.ctrlKey && e.shiftKey && e.keyCode == 'I'.charCodeAt(0)) { return false; }
+            if (e.ctrlKey && e.shiftKey && e.keyCode == 'C'.charCodeAt(0)) { return false; }
+            if (e.ctrlKey && e.shiftKey && e.keyCode == 'J'.charCodeAt(0)) { return false; }
+            if (e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) { return false; } // View source
+        }
+
+        // Custom Beautiful Mobile Notification instead of browser alert()
+        function showNotification(message) {
+            const toast = document.getElementById('appToast');
+            toast.innerText = message;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // --- COPYRIGHT GUARDIAN AND TAMPERING DETECTOR ---
+        (function() {
+            // Obfuscated UTF-8 character list for: "تصميم | محمد طارق"
+            const expectedCharCodes = [1578, 1589, 1605, 1610, 1605, 32, 124, 32, 1605, 1581, 1605, 1583, 32, 1591, 1575, 1585, 1602];
+            const authorMark = expectedCharCodes.map(code => String.fromCharCode(code)).join('');
+
+            function auditCopyright() {
+                const footer = document.getElementById('devFooter');
+                if (!footer) {
+                    lockdownSystem();
+                    return;
+                }
+
+                // Check text structure and existence of name
+                if (!footer.innerText.includes(authorMark)) {
+                    lockdownSystem();
+                    return;
+                }
+
+                // Verify stylesheet/hiding hacks
+                const style = window.getComputedStyle(footer);
+                if (
+                    style.display === 'none' || 
+                    style.visibility === 'hidden' || 
+                    parseFloat(style.opacity) < 0.2 || 
+                    parseInt(style.height, 10) === 0 ||
+                    parseInt(style.fontSize, 10) === 0
+                ) {
+                    lockdownSystem();
+                    return;
+                }
+            }
+
+            function lockdownSystem() {
+                document.body.innerHTML = `
+                    <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; background-color:#111827; color:#f48120; font-family:system-ui, sans-serif; text-align:center; padding:24px; direction:rtl;">
+                        <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-bottom:24px; color:#ef4444;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                        <h1 style="font-size:2rem; margin-bottom:12px; font-weight:800;">عذراً، تم إيقاف التطبيق!</h1>
+                        <p style="font-size:1.15rem; color:#cbd5e1; line-height:1.6; max-width:420px; margin-bottom:24px;">تم الكشف عن محاولة تعديل، إخفاء، أو حذف حقوق الملكية الفكرية الخاصة بالمطور. تم تعطيل التطبيق فوراً لحماية حقوق المبرمج الفنية.</p>
+                        <p style="font-size:1.3rem; font-weight:800; color:#ffffff; background:#f48120; padding:12px 28px; border-radius:12px; box-shadow: 0 4px 10px rgba(244,129,32,0.3); border: 2px solid white;">تصميم | محمد طارق</p>
+                    </div>
+                `;
+                throw new Error("نظام الحماية: تم الكشف عن التلاعب بالحقوق الفكرية للمطور محمد طارق.");
+            }
+
+            // Real-time loop protection
+            setInterval(auditCopyright, 1500);
+            window.addEventListener('load', auditCopyright);
+        })();
+
+        // --- NEW CUSTOM PREMIUM DATE PICKER FUNCTIONS ---
+        function getWidgetDate(id) {
+            const container = document.getElementById('widget-' + id);
+            if (!container) return null;
+            
+            const dInput = container.querySelector('.date-day');
+            const mInput = container.querySelector('.date-month');
+            const yInput = container.querySelector('.date-year');
+
+            const dayVal = parseInt(dInput.value, 10);
+            const monthVal = parseInt(mInput.value, 10);
+            const yearVal = parseInt(yInput.value, 10);
+
+            if (isNaN(dayVal) || isNaN(monthVal) || isNaN(yearVal)) return null;
+            if (monthVal < 1 || monthVal > 12) return null;
+            if (dayVal < 1 || dayVal > 31) return null;
+            if (yearVal < 1000 || yearVal > 9999) return null; // Wait for full 4 digit year
+
+            // Validate actual calendar constraints (e.g. Feb 31st is invalid)
+            const d = new Date(yearVal, monthVal - 1, dayVal);
+            if (d.getFullYear() !== yearVal || d.getMonth() !== (monthVal - 1) || d.getDate() !== dayVal) {
+                return null;
+            }
+            return d;
+        }
+
+        // Auto-formatting and focus shifting for fast mobile date entry
+        function onWidgetInput(id) {
+            const container = document.getElementById('widget-' + id);
+            if (!container) return;
+
+            const dayInput = container.querySelector('.date-day');
+            const monthInput = container.querySelector('.date-month');
+            const yearInput = container.querySelector('.date-year');
+
+            // Clamp max lengths for mobile speed entry
+            if (dayInput.value.length > 2) dayInput.value = dayInput.value.slice(0, 2);
+            if (monthInput.value.length > 2) monthInput.value = monthInput.value.slice(0, 2);
+            if (yearInput.value.length > 4) yearInput.value = yearInput.value.slice(0, 4);
+
+            // Auto-focus next input (Smart Auto-tabbing)
+            if (document.activeElement === dayInput && dayInput.value.length === 2) {
+                monthInput.focus();
+            } else if (document.activeElement === monthInput && monthInput.value.length === 2) {
+                yearInput.focus();
+            }
+
+            triggerCalculation(id);
+        }
+
+        function onWidgetPickerChange(id, dateValue) {
+            if (!dateValue) return;
+            const container = document.getElementById('widget-' + id);
+            if (!container) return;
+
+            const parts = dateValue.split('-'); // Format: YYYY-MM-DD
+            if (parts.length === 3) {
+                container.querySelector('.date-year').value = parts[0];
+                container.querySelector('.date-month').value = parts[1];
+                container.querySelector('.date-day').value = parts[2];
+                triggerCalculation(id);
+            }
+        }
+
+        function triggerCalculation(id) {
+            if (id === 'roumiProdDate') {
+                calculateRoumi();
+            } else if (id === 'expProdDate' || id === 'expEndDate') {
+                calculateExpiry();
+            }
+        }
+
+        // Home View Navigation
+        function showHome() {
+            document.querySelectorAll('.module-view').forEach(el => el.style.display = 'none');
+            document.getElementById('homeView').style.display = 'block';
+            document.getElementById('mainHomeBtn').style.display = 'none';
+        }
+
+        function openModule(modId) {
+            document.getElementById('homeView').style.display = 'none';
+            document.querySelectorAll('.module-view').forEach(el => el.style.display = 'none');
+            document.getElementById(modId + 'View').style.display = 'block';
+            document.getElementById('mainHomeBtn').style.display = 'flex';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            if (modId === 'check100') {
+                updateDbStatus();
+            }
+        }
+
+        // Generic dynamic weight sample management
+        function addSampleField(prefix) {
+            const list = document.getElementById(prefix + 'SamplesList');
+            const count = list.querySelectorAll('input').length;
+            if (count >= 5) {
+                showNotification("الحد الأقصى للتصفية هو 5 عينات فقط");
+                return;
+            }
+            const wrapper = document.createElement('div');
+            wrapper.className = 'form-group';
+            const input = document.createElement('input');
+            input.type = 'number';
+            input.className = prefix + '-sample';
+            input.placeholder = `وزن العينة ${count + 1}`;
+            input.oninput = prefix === 'nat' ? calculateNatural : calculateProcessed;
+            wrapper.appendChild(input);
+            list.appendChild(wrapper);
+        }
+
+        // --- CHECK 100% LOOKUP ENGINE ---
+
+        function handleExcelUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                    
+                    if (json.length < 2) {
+                        showNotification("الملف فارغ أو يحتوي على بيانات غير صالحة");
+                        return;
+                    }
+
+                    // Find headers in first row to parse column indices
+                    const headers = json[0].map(h => String(h).trim().toLowerCase());
+                    
+                    let codeIdx = -1;
+                    let nameIdx = -1;
+                    let issueIdx = -1;
+                    let repeatIdx = -1;
+
+                    // Arabic keywords matcher
+                    const codeKeywords = ["كود", "رقم", "مسلسل", "code", "id", "vendor"];
+                    const nameKeywords = ["اسم", "الشركة", "المورد", "name", "vendor", "company"];
+                    const issueKeywords = ["ملاحظات", "سبب", "مشاكل", "المشكلة", "ملاحظة", "issue", "reason", "notes", "نوع المخالفة"];
+                    const repeatKeywords = ["تكرار", "التكرار", "عدد", "count", "repetition", "repeat"];
+
+                    for (let i = 0; i < headers.length; i++) {
+                        const h = headers[i];
+                        if (codeIdx === -1 && codeKeywords.some(k => h.includes(k))) codeIdx = i;
+                        else if (nameIdx === -1 && nameKeywords.some(k => h.includes(k))) nameIdx = i;
+                        else if (issueIdx === -1 && issueKeywords.some(k => h.includes(k))) issueIdx = i;
+                        else if (repeatIdx === -1 && repeatKeywords.some(k => h.includes(k))) repeatIdx = i;
+                    }
+
+                    // Strict backup mapping if uploader header detection fails
+                    if (codeIdx === -1) codeIdx = 0;
+                    if (nameIdx === -1) nameIdx = 1;
+                    if (issueIdx === -1) issueIdx = headers.length > 2 ? 2 : -1;
+                    if (repeatIdx === -1) repeatIdx = headers.length > 3 ? 3 : -1;
+
+                    const companies = [];
+                    for (let r = 1; r < json.length; r++) {
+                        const row = json[r];
+                        if (!row || row.length === 0) continue;
+
+                        const code = row[codeIdx] !== undefined ? String(row[codeIdx]).trim() : '';
+                        const name = row[nameIdx] !== undefined ? String(row[nameIdx]).trim() : '';
+                        const issue = issueIdx !== -1 && row[issueIdx] !== undefined ? String(row[issueIdx]).trim() : 'توريد بضائع مخالفة/مرفوضة';
+                        const repeat = repeatIdx !== -1 && row[repeatIdx] !== undefined ? parseInt(row[repeatIdx], 10) || 1 : 1;
+
+                        if (name || code) {
+                            companies.push({ code, name, issue, repeat });
+                        }
+                    }
+
+                    if (companies.length > 0) {
+                        localStorage.setItem('fathalla_check100_db', JSON.stringify(companies));
+                        showNotification(`تم حفظ ${companies.length} شركة بنجاح!`);
+                        updateDbStatus();
+                        searchCompany(); // Trigger search to reflect new database
+                    } else {
+                        showNotification("لم يتم العثور على بيانات شركات صالحة");
+                    }
+                } catch (err) {
+                    console.error(err);
+                    showNotification("خطأ أثناء قراءة ملف الإكسيل");
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function updateDbStatus() {
+            const stored = localStorage.getItem('fathalla_check100_db');
+            const badge = document.getElementById('dbStatusBadge');
+            const clearBtn = document.getElementById('clearDbBtn');
+            if (stored) {
+                const count = JSON.parse(stored).length;
+                badge.innerHTML = `حالة قاعدة البيانات: <span style="color: var(--success);">🟢 نشطة (${count} شركة)</span>`;
+                clearBtn.style.display = 'block';
+            } else {
+                badge.innerHTML = `حالة قاعدة البيانات: <span style="color: var(--warning);">🟠 افتراضية (تحتاج لرفع ملف)</span>`;
+                clearBtn.style.display = 'none';
+            }
+        }
+
+        function clearCustomDb() {
+            localStorage.removeItem('fathalla_check100_db');
+            showNotification("تم تصفير كشف الموردين والرجوع للافتراضي");
+            updateDbStatus();
+            searchCompany();
+        }
+
+        function searchCompany() {
+            const input = document.getElementById('companySearchInputQuery' || 'companySearchQuery').value.trim();
+            const resultsDiv = document.getElementById('lookupResultsArea');
+            
+            if (!input) {
+                resultsDiv.style.display = 'none';
+                return;
+            }
+
+            const stored = localStorage.getItem('fathalla_check100_db');
+            const db = stored ? JSON.parse(stored) : defaultCompanies;
+
+            const cleanInput = input.toLowerCase();
+            const numericMatch = input.match(/\d+/);
+            const inputNum = numericMatch ? numericMatch[0] : null;
+
+            // Search logic (Substrings code, substring name, or extracted number matching code)
+            const matches = db.filter(c => {
+                const nameMatch = c.name.toLowerCase().includes(cleanInput);
+                const codeMatch = c.code && cleanInput && c.code.toLowerCase().includes(cleanInput);
+                const codeNumMatch = inputNum && c.code && c.code.includes(inputNum);
+                return nameMatch || codeMatch || codeNumMatch;
+            });
+
+            if (matches.length > 0) {
+                let html = '';
+                matches.forEach(c => {
+                    let repeatBadge = '';
+                    let repeatClass = '';
+                    if (c.repeat >= 4) {
+                        repeatBadge = `مرتفع جداً (تكرار: ${c.repeat})`;
+                        repeatClass = 'bg-red-100 text-red-800 border-red-200';
+                    } else if (c.repeat >= 2) {
+                        repeatBadge = `متوسط (تكرار: ${c.repeat})`;
+                        repeatClass = 'bg-amber-100 text-amber-800 border-amber-200';
+                    } else {
+                        repeatBadge = `منخفض (تكرار: ${c.repeat})`;
+                        repeatClass = 'bg-emerald-100 text-green-800 border-emerald-200';
+                    }
+
+                    html += `
+                        <div class="result-box red animate-in fade-in duration-200" style="margin-bottom: 16px;">
+                            <div class="alert-banner red" style="margin-bottom: 12px; font-size: 1rem;">
+                                🚨 تنبيه: هذه الشركة مدرجة في قائمة تشييك 100%!
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 8px;">
+                                <div><strong>اسم الشركة:</strong> <span style="font-weight: 800; color: var(--dark-header);">${c.name}</span></div>
+                                <div><strong>كود المورد:</strong> <code style="background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-weight: bold; color: var(--primary-dark);">${c.code || 'غير مسجل'}</code></div>
+                                <div><strong>نوع المخالفة:</strong> <span style="color: #64748b;">${c.issue || 'توريد بضائع مخالفة'}</span></div>
+                                <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
+                                    <strong>مستوى التكرار:</strong>
+                                    <span class="px-3 py-1 text-xs font-bold rounded-full border ${repeatClass}">${repeatBadge}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                document.getElementById('lookupResultsContent').innerHTML = html;
+            } else {
+                document.getElementById('lookupResultsContent').innerHTML = `
+                    <div class="result-box green animate-in fade-in duration-200">
+                        <div class="alert-banner green" style="background-color: var(--success-bg); color: var(--success); font-size: 1rem;">
+                            ✅ شركة سليمة: هذا المورد غير مدرج في قائمة تشييك 100%.
+                        </div>
+                        <div style="margin-top: 10px; font-size: 0.9rem; color: #475569;">
+                            يمكن استلام البضائع بشكل طبيعي مع تطبيق شروط الفحص العشوائي المعتادة.
+                        </div>
+                    </div>
+                `;
+            }
+            resultsDiv.style.display = 'block';
+        }
+
+        // 1. Natural Cheese Calculations
+        function calculateNatural() {
+            const totalQty = parseFloat(document.getElementById('natTotalQty').value);
+            const standard = parseFloat(document.getElementById('natStandard').value);
+            const samples = Array.from(document.querySelectorAll('.nat-sample'))
+                                 .map(el => parseFloat(el.value))
+                                 .filter(n => !isNaN(n) && n > 0);
+
+            const resultsSec = document.getElementById('natResults');
+            if (!totalQty || samples.length === 0) {
+                resultsSec.style.display = 'none';
+                updateNaturalSteps(NaN, NaN, NaN, NaN, NaN);
+                return;
+            }
+
+            const sum = samples.reduce((acc, curr) => acc + curr, 0);
+            const avg = sum / samples.length;
+            let actual = avg * totalQty;
+            let comp = 0;
+
+            if (standard && avg > standard) {
+                actual = standard * totalQty;
+                comp = (avg - standard) * totalQty;
+                document.getElementById('natCompBox').style.display = 'block';
+            } else {
+                document.getElementById('natCompBox').style.display = 'none';
+            }
+
+            document.getElementById('natResAvg').innerText = avg.toFixed(3) + ' كجم';
+            document.getElementById('natResActual').innerText = actual.toFixed(3) + ' كجم';
+            document.getElementById('natResComp').innerText = comp.toFixed(3) + ' كجم';
+            resultsSec.style.display = 'block';
+
+            // Update Dynamic Steps
+            updateNaturalSteps(totalQty, avg, standard, actual, comp);
+        }
+
+        // 2. Processed Cheese Calculations
+        function calculateProcessed() {
+            const totalQty = parseFloat(document.getElementById('procTotalQty').value);
+            const standard = parseFloat(document.getElementById('procStandard').value);
+            const samples = Array.from(document.querySelectorAll('.proc-sample'))
+                                 .map(el => parseFloat(el.value))
+                                 .filter(n => !isNaN(n) && n > 0);
+
+            const resultsSec = document.getElementById('procResults');
+            if (!totalQty || samples.length === 0) {
+                resultsSec.style.display = 'none';
+                updateProcessedSteps(NaN, NaN, NaN, NaN, NaN, NaN);
+                return;
+            }
+
+            const min = Math.min(...samples);
+            const sum = samples.reduce((acc, curr) => acc + curr, 0);
+            const avg = sum / samples.length;
+            
+            let actual = min * totalQty;
+            let comp = 0;
+
+            if (standard && samples.every(s => s > standard)) {
+                actual = standard * totalQty;
+                comp = (avg - min) * totalQty;
+                document.getElementById('procCompBox').style.display = 'block';
+            } else {
+                document.getElementById('procCompBox').style.display = 'none';
+            }
+
+            document.getElementById('procResMin').innerText = min.toFixed(3) + ' كجم';
+            document.getElementById('procResActual').innerText = actual.toFixed(3) + ' كجم';
+            document.getElementById('procResComp').innerText = comp.toFixed(3) + ' كجم';
+            resultsSec.style.display = 'block';
+
+            // Update Dynamic Steps
+            updateProcessedSteps(totalQty, min, avg, standard, actual, comp);
+        }
+
+        // 4. Pastrami Calculations
+        function calculatePastrami() {
+            const totalQty = parseFloat(document.getElementById('pastTotalQty').value);
+            const gross = parseFloat(document.getElementById('pastGrossWeight').value);
+            const garlic = parseFloat(document.getElementById('pastGarlicWeight').value);
+            const resultsSec = document.getElementById('pastramiResults');
+
+            if (!totalQty || !gross || !garlic) {
+                resultsSec.style.display = 'none';
+                updatePastramiSteps(NaN, NaN, NaN, NaN, NaN, NaN, false);
+                return;
+            }
+
+            const ratio = (garlic / gross) * 100;
+            let actual = totalQty;
+            let bonus = 0;
+            const isExcess = ratio > 20;
+
+            if (isExcess) {
+                const excessPercent = (ratio - 20) / 100;
+                bonus = totalQty * excessPercent;
+                actual = totalQty - bonus - 0.500;
+                document.getElementById('pastBonusBox').style.display = 'block';
+                document.getElementById('pastCompBox').style.display = 'block';
+                document.getElementById('pastRatioBox').className = "result-box red";
+            } else {
+                document.getElementById('pastBonusBox').style.display = 'none';
+                document.getElementById('pastCompBox').style.display = 'none';
+                document.getElementById('pastRatioBox').className = "result-box green";
+            }
+
+            document.getElementById('pastResRatio').innerText = ratio.toFixed(2) + '%';
+            document.getElementById('pastResActual').innerText = actual.toFixed(3) + ' كجم';
+            document.getElementById('pastResBonus').innerText = bonus.toFixed(3) + ' كجم';
+            resultsSec.style.display = 'block';
+
+            // Update Dynamic Steps
+            updatePastramiSteps(totalQty, gross, garlic, ratio, actual, bonus, isExcess);
+        }
+
+        // 5. Luncheon Calculations
+        function calculateLuncheon() {
+            const pieces = parseFloat(document.getElementById('lunchPieces').value);
+            const avgW = parseFloat(document.getElementById('lunchAvgWeight').value);
+            const resultsSec = document.getElementById('lunchResults');
+
+            if (!pieces || !avgW) {
+                resultsSec.style.display = 'none';
+                updateLuncheonSteps(NaN, NaN, NaN, NaN, NaN, '');
+                return;
+            }
+
+            const totalWeight = avgW * pieces;
+            let actualPerPiece = 0;
+            let bonusPerPiece = 0;
+            let scenario = 'under';
+
+            if (avgW <= 5.0) {
+                actualPerPiece = avgW;
+                bonusPerPiece = 0;
+                scenario = 'under';
+            } else if (avgW > 5.0 && avgW <= 5.100) {
+                actualPerPiece = 5.0;
+                bonusPerPiece = avgW - 5.0;
+                scenario = 'bonus';
+            } else {
+                bonusPerPiece = 0.100;
+                actualPerPiece = avgW - 0.100;
+                scenario = 'over';
+            }
+
+            const actual = actualPerPiece * pieces;
+            const bonus = bonusPerPiece * pieces;
+
+            document.getElementById('lunchTotalWeight').innerText = totalWeight.toFixed(3) + ' كجم';
+            document.getElementById('lunchResActual').innerText = actual.toFixed(3) + ' كجم';
+            document.getElementById('lunchResBonus').innerText = bonus.toFixed(3) + ' كجم';
+            resultsSec.style.display = 'block';
+
+            // Update Dynamic Steps
+            updateLuncheonSteps(pieces, avgW, totalWeight, actual, bonus, scenario);
+        }
+
+        // 6. Dry Goods Calculations (UPDATED to allow both methods for >= 100 kg)
+        function switchDryMethod(method) {
+            currentDryMethod = method;
+            document.getElementById('segmentDrySample').classList.toggle('active', method === 'sample');
+            document.getElementById('segmentDryTotal').classList.toggle('active', method === 'total');
+            calculateDry();
+        }
+
+        function calculateDry() {
+            const totalQty = parseFloat(document.getElementById('dryTotalQty').value);
+            const resultsSec = document.getElementById('dryResults');
+
+            if (isNaN(totalQty) || totalQty <= 0) {
+                resultsSec.style.display = 'none';
+                document.getElementById('dryMethodSegment').style.display = 'none';
+                document.getElementById('drySample100Group').style.display = 'block';
+                document.getElementById('dryTotalActualGroup').style.display = 'none';
+                updateDrySteps(NaN, NaN, NaN, NaN, false, NaN, NaN);
+                return;
+            }
+
+            let actual = totalQty;
+            let comp = 0;
+            let isDeficit = false;
+
+            if (totalQty >= 100) {
+                // Show the method selector segment control
+                document.getElementById('dryMethodSegment').style.display = 'flex';
+
+                if (currentDryMethod === 'sample') {
+                    // Method A: Sample of 100 kg
+                    document.getElementById('drySample100Group').style.display = 'block';
+                    document.getElementById('dryTotalActualGroup').style.display = 'none';
+
+                    const sampleW = parseFloat(document.getElementById('drySampleWeight').value);
+                    if (isNaN(sampleW) || sampleW <= 0) {
+                        resultsSec.style.display = 'none';
+                        updateDrySteps(totalQty, NaN, NaN, NaN, false, NaN, NaN);
+                        return;
+                    }
+
+                    isDeficit = sampleW < 99;
+                    if (isDeficit) {
+                        const numSamples = totalQty / 100;
+                        const deficit = 99 - sampleW;
+                        comp = Math.ceil(deficit * numSamples);
+                        actual = totalQty - comp;
+                        document.getElementById('dryCompBox').style.display = 'block';
+                    } else {
+                        document.getElementById('dryCompBox').style.display = 'none';
+                    }
+
+                    document.getElementById('dryResActual').innerText = actual.toFixed(1) + ' كجم';
+                    document.getElementById('dryResComp').innerText = comp.toFixed(1) + ' كجم';
+                    resultsSec.style.display = 'block';
+
+                    // Update steps
+                    updateDrySteps(totalQty, sampleW, actual, comp, isDeficit, NaN, NaN);
+                } else {
+                    // Method B: Full weight for >= 100 kg
+                    document.getElementById('drySample100Group').style.display = 'none';
+                    document.getElementById('dryTotalActualGroup').style.display = 'block';
+
+                    const totalActualW = parseFloat(document.getElementById('dryTotalActualWeight').value);
+                    if (isNaN(totalActualW) || totalActualW <= 0) {
+                        resultsSec.style.display = 'none';
+                        updateDrySteps(totalQty, NaN, NaN, NaN, false, NaN, NaN);
+                        return;
+                    }
+
+                    // 1% allowance on total quantity (e.g. 140kg total qty * 0.99 = 138.6kg allowable limit)
+                    const allowableW = totalQty * 0.99;
+                    isDeficit = totalActualW < allowableW;
+
+                    if (isDeficit) {
+                        const deficit = allowableW - totalActualW;
+                        comp = Math.ceil(deficit); // Round up to nearest integer
+                        actual = totalQty - comp;
+                        document.getElementById('dryCompBox').style.display = 'block';
+                    } else {
+                        document.getElementById('dryCompBox').style.display = 'none';
+                    }
+
+                    document.getElementById('dryResActual').innerText = actual.toFixed(1) + ' كجم';
+                    document.getElementById('dryResComp').innerText = comp.toFixed(1) + ' كجم';
+                    resultsSec.style.display = 'block';
+
+                    // Update steps
+                    updateDrySteps(totalQty, NaN, actual, comp, isDeficit, totalActualW, allowableW);
+                }
+            } else {
+                // For quantities less than 100 kg, force full weight check and hide segment
+                document.getElementById('dryMethodSegment').style.display = 'none';
+                document.getElementById('drySample100Group').style.display = 'none';
+                document.getElementById('dryTotalActualGroup').style.display = 'block';
+
+                const totalActualW = parseFloat(document.getElementById('dryTotalActualWeight').value);
+                if (isNaN(totalActualW) || totalActualW <= 0) {
+                    resultsSec.style.display = 'none';
+                    updateDrySteps(totalQty, NaN, NaN, NaN, false, NaN, NaN);
+                    return;
+                }
+
+                const allowableW = totalQty * 0.99;
+                isDeficit = totalActualW < allowableW;
+
+                if (isDeficit) {
+                    const deficit = allowableW - totalActualW;
+                    comp = Math.ceil(deficit); // Round up to nearest integer
+                    actual = totalQty - comp;
+                    document.getElementById('dryCompBox').style.display = 'block';
+                } else {
+                    document.getElementById('dryCompBox').style.display = 'none';
+                }
+
+                document.getElementById('dryResActual').innerText = actual.toFixed(1) + ' كجم';
+                document.getElementById('dryResComp').innerText = comp.toFixed(1) + ' كجم';
+                resultsSec.style.display = 'block';
+
+                // Update steps
+                updateDrySteps(totalQty, NaN, actual, comp, isDeficit, totalActualW, allowableW);
+            }
+        }
+
+        // 7. Casings Switcher
+        function switchCasings(type) {
+            currentCasingType = type;
+            document.getElementById('segmentHank').classList.toggle('active', type === 'hank');
+            document.getElementById('segmentMombar').classList.toggle('active', type === 'mombar');
+            
+            const label = document.getElementById('caseLabel');
+            if (type === 'hank') {
+                label.innerText = "وزن لحم الحشو لعينة واحدة (كجم)";
+            } else {
+                label.innerText = "طول عينة واحدة (سنتيمتر)";
+            }
+            calculateCasings();
+        }
+
+        function calculateCasings() {
+            const totalQty = parseFloat(document.getElementById('caseTotalQty').value);
+            const value = parseFloat(document.getElementById('caseSampleValue').value);
+            const resultsSec = document.getElementById('caseResults');
+
+            if (!totalQty || !value) {
+                resultsSec.style.display = 'none';
+                updateCasingsSteps(NaN, NaN, NaN, NaN, NaN, false);
+                return;
+            }
+
+            const standard = currentCasingType === 'hank' ? 15 : 60;
+            let actual = totalQty;
+            let comp = 0;
+            const isDeficit = value < standard;
+
+            if (isDeficit) {
+                const ratio = (standard - value) / standard;
+                comp = Math.ceil(totalQty * ratio);
+                actual = totalQty - comp;
+                document.getElementById('caseCompBox').style.display = 'block';
+            } else {
+                document.getElementById('caseCompBox').style.display = 'none';
+            }
+
+            document.getElementById('caseResActual').innerText = actual;
+            document.getElementById('caseResComp').innerText = comp;
+            resultsSec.style.display = 'block';
+
+            // Update Dynamic Steps
+            updateCasingsSteps(totalQty, value, standard, actual, comp, isDeficit);
+        }
+
+        // 8. General Expiry Calculator
+        function calculateExpiry() {
+            const prodDate = getWidgetDate('expProdDate');
+            const endDate = getWidgetDate('expEndDate');
+            const resultsSec = document.getElementById('expResults');
+
+            if (!prodDate || !endDate) {
+                resultsSec.style.display = 'none';
+                return;
+            }
+
+            const errBlock = document.getElementById('expErr');
+            const cleanResults = document.getElementById('expCleanResults');
+
+            if (endDate <= prodDate) {
+                errBlock.style.display = 'flex';
+                cleanResults.style.display = 'none';
+                resultsSec.style.display = 'block';
+                return;
+            }
+
+            errBlock.style.display = 'none';
+            cleanResults.style.display = 'block';
+
+            const today = new Date();
+            today.setHours(0,0,0,0);
+
+            const totalDays = Math.round((endDate - prodDate) / (1000 * 60 * 60 * 24));
+            const passedDays = Math.max(0, Math.round((today - prodDate) / (1000 * 60 * 60 * 24)));
+            const remainingDays = totalDays - passedDays;
+
+            function formatDuration(days) {
+                const y = Math.floor(days / 365);
+                const m = Math.floor((days % 365) / 30);
+                const d = Math.floor((days % 365) % 30);
+                
+                let str = [];
+                if (y > 0) str.push(`${y} سنة`);
+                if (m > 0) str.push(`${m} شهر`);
+                if (d > 0 || str.length === 0) str.push(`${d} يوم`);
+                return str.join(' و ');
+            }
+
+            const isExpired = remainingDays <= 0;
+            const isPassedHalf = passedDays > (totalDays / 2) && !isExpired;
+            
+            const warningThreshold = getQuarterDays(totalDays);
+            const isQuarterRemaining = remainingDays <= warningThreshold && !isExpired;
+
+            document.getElementById('expResTotal').innerText = formatDuration(totalDays);
+            document.getElementById('expResPassed').innerText = formatDuration(passedDays);
+            
+            // --- NEW REVOLUTIONARY HALF-LIFE TRACKING LOGIC ---
+            const halfDays = totalDays / 2;
+            const halfBox = document.getElementById('expHalfBox');
+            const halfLabelEl = document.getElementById('expHalfLabel');
+            const halfValueEl = document.getElementById('expResHalf');
+
+            if (halfBox && halfLabelEl && halfValueEl) {
+                if (passedDays < halfDays) {
+                    // Today is BEFORE half-life
+                    const daysToHalf = Math.round(halfDays - passedDays);
+                    halfLabelEl.innerText = "الوقت المتبقي للوصول لنصف مدة الصلاحية";
+                    halfValueEl.innerText = formatDuration(daysToHalf);
+                    halfBox.className = "result-box blue"; // Clean premium blue
+                } else {
+                    // Today is AFTER half-life
+                    const daysPastHalf = Math.round(passedDays - halfDays);
+                    halfLabelEl.innerText = "الوقت المنقضي بعد نصف مدة الصلاحية";
+                    halfValueEl.innerText = formatDuration(daysPastHalf);
+                    halfBox.className = "result-box orange"; // Attention grabbing orange
+                }
+                halfBox.style.display = 'block';
+            }
+
+            const remVal = document.getElementById('expResRemaining');
+            const remBox = document.getElementById('expRemainingBox');
+            
+            if (isExpired) {
+                remVal.innerText = "منتهي الصلاحية";
+                remBox.className = "result-box red";
+                if (halfBox) halfBox.style.display = 'none'; // Hide if completely expired
+            } else {
+                remVal.innerText = formatDuration(remainingDays);
+                remBox.className = "result-box green";
+            }
+
+            let alertHtml = "";
+            if (isExpired) {
+                alertHtml += `<div class="alert-banner red">🛑 تحذير: هذا المنتج منتهي الصلاحية تماماً!</div>`;
+            } else {
+                if (isPassedHalf) {
+                    alertHtml += `<div class="alert-banner orange">⚠️ تنبيه: تجاوز المنتج نصف مدة الصلاحية!</div>`;
+                }
+                if (isQuarterRemaining) {
+                    alertHtml += `<div class="alert-banner yellow">⏳ تنبيه الربع مدة: دخل المنتج في الربع الأخير من الصلاحية (متبقي أقل من ${warningThreshold} يوم)!</div>`;
+                }
+            }
+
+            document.getElementById('expAlerts').innerHTML = alertHtml;
+            resultsSec.style.display = 'block';
+        }
+
+        // تسجيل الحارس السري الأوفلاين للعمل بدون شبكة
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('نظام التصفح الأوفلاين نشط'))
+                    .catch(err => console.log('خطأ في نظام الأوفلاين', err));
+            });
+        }
+    </script>
+</body>
+</html>
