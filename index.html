@@ -697,7 +697,7 @@
             
             <!-- Excel file uploader widget -->
             <div class="form-group">
-                <label>تحديث قاعدة البيانات (اختياري)</label>
+                <label>تحديث قائمة الموردين (اختياري)</label>
                 <div class="excel-drop-zone" onclick="document.getElementById('excelFileInput').click()">
                     <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin: 0 auto 8px; color: var(--primary);"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
                     <span style="font-weight: 700; font-size: 0.95rem; color: var(--dark-header);">اضغط هنا لرفع ملف كشف الشركات الـ Excel</span>
@@ -715,7 +715,7 @@
             <!-- Real-time search inputs -->
             <div class="form-group">
                 <label>ابحث باسم الشركة أو كود المورد</label>
-                <input type="text" id="companySearchQuery" placeholder="مثال: المراعي، بيتي، أو كود مثل 3410" oninput="searchCompany()">
+                <input type="text" id="companySearchQuery" placeholder="مثال: الصقر، روتانا، أو كود مثل 121" oninput="searchCompany()">
             </div>
 
             <!-- Lookup Results Area -->
@@ -1372,47 +1372,79 @@
                         return;
                     }
 
-                    // Find headers in first row to parse column indices
-                    const headers = json[0].map(h => String(h).trim().toLowerCase());
-                    
+                    // SCAN FIRST 15 ROWS DYNAMICALLY TO LOCATE THE REAL HEADER ROW
+                    let headerRowIdx = -1;
                     let codeIdx = -1;
                     let nameIdx = -1;
                     let issueIdx = -1;
                     let repeatIdx = -1;
 
-                    // Arabic keywords matcher
+                    // Arabic and English keywords matching matrix
                     const codeKeywords = ["كود", "رقم", "مسلسل", "code", "id", "vendor"];
                     const nameKeywords = ["اسم", "الشركة", "المورد", "name", "vendor", "company"];
-                    const issueKeywords = ["ملاحظات", "سبب", "مشاكل", "المشكلة", "ملاحظة", "issue", "reason", "notes", "نوع المخالفة"];
+                    const issueKeywords = ["ملاحظات", "سبب", "مشاكل", "المشكلة", "ملاحظة", "issue", "reason", "notes", "نوع المخالفة", "المخالفة"];
                     const repeatKeywords = ["تكرار", "التكرار", "عدد", "count", "repetition", "repeat"];
 
-                    for (let i = 0; i < headers.length; i++) {
-                        const h = headers[i];
-                        if (codeIdx === -1 && codeKeywords.some(k => h.includes(k))) codeIdx = i;
-                        else if (nameIdx === -1 && nameKeywords.some(k => h.includes(k))) nameIdx = i;
-                        else if (issueIdx === -1 && issueKeywords.some(k => h.includes(k))) issueIdx = i;
-                        else if (repeatIdx === -1 && repeatKeywords.some(k => h.includes(k))) repeatIdx = i;
+                    for (let r = 0; r < Math.min(json.length, 15); r++) {
+                        const row = json[r];
+                        if (!row || row.length < 2) continue;
+
+                        let tempCodeIdx = -1;
+                        let tempNameIdx = -1;
+                        let tempIssueIdx = -1;
+                        let tempRepeatIdx = -1;
+
+                        for (let c = 0; c < row.length; c++) {
+                            const val = String(row[c] || '').trim().toLowerCase();
+                            if (!val) continue;
+
+                            if (tempCodeIdx === -1 && codeKeywords.some(k => val.includes(k))) {
+                                tempCodeIdx = c;
+                            } else if (tempNameIdx === -1 && nameKeywords.some(k => val.includes(k)) && !val.includes("كود")) {
+                                tempNameIdx = c;
+                            } else if (tempIssueIdx === -1 && issueKeywords.some(k => val.includes(k))) {
+                                tempIssueIdx = c;
+                            } else if (tempRepeatIdx === -1 && repeatKeywords.some(k => val.includes(k))) {
+                                tempRepeatIdx = c;
+                            }
+                        }
+
+                        // If both code and name are resolved, we found our header row!
+                        if (tempCodeIdx !== -1 && tempNameIdx !== -1) {
+                            headerRowIdx = r;
+                            codeIdx = tempCodeIdx;
+                            nameIdx = tempNameIdx;
+                            issueIdx = tempIssueIdx;
+                            repeatIdx = tempRepeatIdx;
+                            break;
+                        }
                     }
 
-                    // Strict backup mapping if uploader header detection fails
-                    if (codeIdx === -1) codeIdx = 0;
-                    if (nameIdx === -1) nameIdx = 1;
-                    if (issueIdx === -1) issueIdx = headers.length > 2 ? 2 : -1;
-                    if (repeatIdx === -1) repeatIdx = headers.length > 3 ? 3 : -1;
-
+                    // STRICT FILTERING AND ROW READING
                     const companies = [];
-                    for (let r = 1; r < json.length; r++) {
+                    const startRow = headerRowIdx !== -1 ? headerRowIdx + 1 : 1;
+
+                    for (let r = startRow; r < json.length; r++) {
                         const row = json[r];
                         if (!row || row.length === 0) continue;
 
-                        const code = row[codeIdx] !== undefined ? String(row[codeIdx]).trim() : '';
-                        const name = row[nameIdx] !== undefined ? String(row[nameIdx]).trim() : '';
+                        const code = codeIdx !== -1 && row[codeIdx] !== undefined ? String(row[codeIdx]).trim() : '';
+                        const name = nameIdx !== -1 && row[nameIdx] !== undefined ? String(row[nameIdx]).trim() : '';
                         const issue = issueIdx !== -1 && row[issueIdx] !== undefined ? String(row[issueIdx]).trim() : 'توريد بضائع مخالفة/مرفوضة';
-                        const repeat = repeatIdx !== -1 && row[repeatIdx] !== undefined ? parseInt(row[repeatIdx], 10) || 1 : 1;
+                        const repeatRaw = repeatIdx !== -1 && row[repeatIdx] !== undefined ? String(row[repeatIdx]).trim() : '1';
+                        const repeat = parseInt(repeatRaw, 10) || 1;
 
-                        if (name || code) {
-                            companies.push({ code, name, issue, repeat });
+                        // STOPS READING ON TRAILING EMPTY ROWS
+                        if (!name || name === "" || name === "اسم المورد" || name === "اسم الشركة") {
+                            continue;
                         }
+
+                        // Filter out headers duplicates
+                        if (code === "كود المورد" || code === "كود") {
+                            continue;
+                        }
+
+                        companies.push({ code, name, issue, repeat });
                     }
 
                     if (companies.length > 0) {
@@ -1421,11 +1453,11 @@
                         updateDbStatus();
                         searchCompany(); // Trigger search to reflect new database
                     } else {
-                        showNotification("لم يتم العثور على بيانات شركات صالحة");
+                        showNotification("لم يتم العثور على بيانات شركات صالحة. تأكد من مراجعة عناوين الأعمدة.");
                     }
                 } catch (err) {
                     console.error(err);
-                    showNotification("خطأ أثناء قراءة ملف الإكسيل");
+                    showNotification("حدث خطأ أثناء فتح ملف الإكسيل");
                 }
             };
             reader.readAsArrayBuffer(file);
@@ -1501,10 +1533,7 @@
                                 <div><strong>اسم الشركة:</strong> <span style="font-weight: 800; color: var(--dark-header);">${c.name}</span></div>
                                 <div><strong>كود المورد:</strong> <code style="background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-weight: bold; color: var(--primary-dark);">${c.code || 'غير مسجل'}</code></div>
                                 <div><strong>نوع المخالفة:</strong> <span style="color: #64748b;">${c.issue || 'توريد بضائع مخالفة'}</span></div>
-                                <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
-                                    <strong>مستوى التكرار:</strong>
-                                    <span class="px-3 py-1 text-xs font-bold rounded-full border ${repeatClass}">${repeatBadge}</span>
-                                </div>
+                                <div><strong>التكرار:</strong> <span class="px-2 py-1 rounded text-xs font-bold ${repeatClass}">${repeatBadge}</span></div>
                             </div>
                         </div>
                     `;
@@ -1621,10 +1650,10 @@
                 box.innerHTML = `
                     <h4>💡 طريقة ومراحل الحساب:</h4>
                     <ol>
-                        <li>نأخذ عينة مكونة من فردين (أعلى وأقل نسبة ثوم من حيث السمك)، ونزن العينة كاملة بالثوم (قائم).</li>
+                        <li>نأخذ عينة مكونة من فردين (أعلى وأقل نسبة ثوم من حيث السمك), ونزن العينة كاملة بالثوم (قائم).</li>
                         <li>يتم خلي العينة تماماً ووزن الثوم المنفصل لمعرفة نسبة وجوده بالمعادلة: <code>(وزن الثوم ÷ وزن العينة قائم) × 100</code>.</li>
                         <li>إذا كانت نسبة الثوم <b>20% أو أقل</b>: تستلم كامل البضاعة بوزنها الفعلي وبدون أي خصومات.</li>
-                        <li>إذا <b>تعدت النسبة 20%</b>: يُحسب فرق النسبة الزائد ويُضرب في إجمالي الكمية ليكون <b>بونص</b>، ويُخصم كذلك <b>تعويض ثابت قدره 500 جرام (0.500 كجم)</b> من الفعلي المعتمد النهائي.</li>
+                        <li>إذا <b>تعدت النسبة 20%</b>: يُحسب فرق النسبة الزائد ويُضرب في إجمالي الكمية ليكون <b>بونص</b>, ويُخصم كذلك <b>تعويض ثابت قدره 500 جرام (0.500 كجم)</b> من الفعلي المعتمد النهائي.</li>
                     </ol>
                 `;
                 return;
@@ -1797,7 +1826,7 @@
                     <ol>
                         <li><b>الهانك المعياري:</b> يجب أن يتسع لحشو 15 كجم لحم. <b>الممبار المعياري:</b> يجب أن يكون بطول 60 سم.</li>
                         <li>يتم حشو أو قياس عينة فردية واحدة للتأكد من مطابقتها للاستاندر والمواصفات.</li>
-                        <li>إذا قل وزن حشو الهانك أو طول الممبار عن الاستاندر، نحدد نسبة العجز: <code>(المعياري - المقاس الفعلي) ÷ المعياري</code>.</li>
+                        <li>إذا قل وزن حشو الهانك أو طول الممبار عن الاستاندر, نحدد نسبة العجز: <code>(المعياري - المقاس الفعلي) ÷ المعياري</code>.</li>
                         <li><b>عدد حبات التعويض</b> = نسبة العجز × الكمية الكلية (وتقرب لأعلى حبة صحيحة دائماً لضمان الدقة ومصلحة الاستلام).</li>
                         <li><b>العدد الفعلي المعتمد</b> = الكمية الكلية - عدد حبات التعويض.</li>
                     </ol>
@@ -1912,6 +1941,16 @@
 
             // Update Dynamic Steps
             updateProcessedSteps(totalQty, min, avg, standard, actual, comp);
+        }
+
+        // Quarter Threshold Evaluator
+        function getQuarterDays(total) {
+            if (total >= 1050) return 90; // 3 سنوات
+            if (total >= 700) return 45; // سنتين
+            if (total >= 350) return 30; // سنة
+            if (total >= 85) return 15; // 3 لـ 9 شهور
+            if (total >= 28) return 7; // شهر لشهرين
+            return 3; // 14 يوم أو أقل
         }
 
         // 3. Roumi Cheese Calculations (No Steps box as it is pure Date check)
