@@ -3,23 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>حاسبة الإستلام - TEST</title>
+    <title>حاسبة الإستلام - فتح الله ماركت</title>
     
-    <!-- وسوم تشغيل التطبيق في شاشة كاملة وبمظهر مستقل على الآيفون iOS -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="حاسبة الإستلام">
     <link rel="apple-touch-icon" href="./logo.png">
     
-    <!-- ربط ملف تعريف هوية التطبيق PWA للاندرويد والآيفون -->
     <link rel="manifest" href="./manifest.json">
 
-    <!-- مكتبة قراءة ملفات الإكسيل (تعمل أوفلاين بعد التخزين) -->
+    <!-- مكتبة قراءة ملفات الإكسيل -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
     <style>
         :root {
-            --primary: #f48120; /* Fathalla Orange */
+            --primary: #f48120;
             --primary-dark: #d66810;
             --bg-main: #f8fafc;
             --bg-card: #ffffff;
@@ -81,9 +79,7 @@
             gap: 10px;
         }
 
-        .header-title svg {
-            color: var(--primary);
-        }
+        .header-title svg { color: var(--primary); }
 
         .home-btn {
             background-color: #1f2937;
@@ -222,9 +218,7 @@
             font-weight: 500;
         }
 
-        .form-group {
-            margin-bottom: 16px;
-        }
+        .form-group { margin-bottom: 16px; }
 
         label {
             display: block;
@@ -642,15 +636,14 @@
             </div>
             
             <div class="info-box">
-                <b>ملاحظة هامة جداً قبل الرفع:</b> 
-                يجب أن تفتح شيت الإكسيل أولاً وتضغط كليك يمين على الجدول المحوري (Pivot Table) وتختار (Expand All / توسيع الكل) ليظهر عمود "نوع المخالفة" أمامك على الشاشة قبل الحفظ، وإلا سيقرأ البرنامج الإجمالي فقط!
+                <b>ملاحظة:</b> يتم الاعتماد على قاعدة البيانات الأساسية المحملة مسبقاً للربع الحالي لعام 2026. في حال وجود شيت جديد ربع سنوي، يمكنك رفعه لتحديث البيانات فوراً.
             </div>
 
             <!-- Database Status -->
             <div id="dbStatusIndicator"></div>
 
             <div class="form-group" style="background: #f8fafc; padding: 16px; border-radius: 12px; border: 1px dashed #cbd5e1; margin-bottom: 24px;">
-                <label style="color: var(--primary-dark); font-size: 0.95rem; margin-bottom: 10px;">إعداد وتحديث قاعدة البيانات (رفع ملف الإكسيل)</label>
+                <label style="color: var(--primary-dark); font-size: 0.95rem; margin-bottom: 10px;">إعداد وتحديث قاعدة البيانات (رفع شيت جديد)</label>
                 <input type="file" id="excelFile" accept=".xlsx, .xls, .csv" onchange="handleExcelUpload(event)" style="padding: 10px; font-size: 0.9rem; background: #fff;">
             </div>
 
@@ -1204,6 +1197,48 @@
             }
         }
 
+        // AUTO-LOAD DEFAULT DB FUNCTION
+        async function loadDefaultDatabase() {
+            try {
+                // Try fetching the default local file hosted on github
+                const response = await fetch('./default_db.xlsx');
+                if (!response.ok) throw new Error("Default DB not found on server");
+                
+                const arrayBuffer = await response.arrayBuffer();
+                const data = new Uint8Array(arrayBuffer);
+                const workbook = XLSX.read(data, {type: 'array'});
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet, {header: 1});
+
+                const db = processExcelData(jsonData);
+                if (db && db.length > 0) {
+                    localStorage.setItem('check100DB', JSON.stringify(db));
+                    updateDBStatus();
+                    showNotification(`تم تحميل قاعدة البيانات الأساسية بنجاح! (${db.length} شركة)`);
+                }
+            } catch (error) {
+                console.log("No default database found or error loading it:", error);
+                // The red banner will remain, asking user to upload manually
+            }
+        }
+
+        // Initialize App & Auto-Load Check
+        function initApp() {
+            const dbStr = localStorage.getItem('check100DB');
+            if (!dbStr) {
+                // If local storage is empty, display loading and fetch default db
+                const statusEl = document.getElementById('dbStatusIndicator');
+                if(statusEl) statusEl.innerHTML = `<div class="alert-banner yellow">⏳ جاري تحميل قاعدة البيانات الأساسية...</div>`;
+                loadDefaultDatabase();
+            } else {
+                // If it already has data (either from previous auto-load or manual upload), just update UI
+                updateDBStatus();
+            }
+        }
+        window.addEventListener('DOMContentLoaded', initApp);
+
+
         // Smart, fuzzy pivot table parser
         function processExcelData(data) {
             let db = [];
@@ -1213,25 +1248,22 @@
                 let row = data[i];
                 if (!row || row.length === 0) continue;
 
-                // Normalize cells
                 let colA = row[0] !== undefined && row[0] !== null ? String(row[0]).trim() : "";
                 let colB = row[1] !== undefined && row[1] !== null ? String(row[1]).trim() : "";
                 let colC = row[2] !== undefined && row[2] !== null ? String(row[2]).trim() : "";
 
                 if (!colA && !colB && !colC) continue;
 
-                // Skip headers, footers, totals
                 if (colA.includes("التكرار") || colA.includes("المورد") || colA.includes("قائمة") ||
                     colA.includes("إجمالي") || colA.includes("Total") || colA.includes("الاجمالى") ||
-                    colB.includes("إجمالي") || colB.includes("Total")) {
+                    colB.includes("إجمالي") || colB.includes("Total") || colC.includes("إجمالي") || colC.includes("Total")) {
                     continue;
                 }
 
-                // Get count from the last valid numerical column in the row
                 const getCount = (r) => {
                     for (let j = r.length - 1; j >= 0; j--) {
                         if (r[j] !== undefined && r[j] !== null && String(r[j]).trim() !== "") {
-                            let strVal = String(r[j]).trim().replace(/,/g, ''); // remove commas like 1,000
+                            let strVal = String(r[j]).trim().replace(/,/g, '');
                             if (!isNaN(strVal) && strVal !== "") return parseInt(strVal);
                         }
                     }
@@ -1243,7 +1275,6 @@
                 let code = "";
                 let name = colA;
 
-                // Detect Company pattern (Number + Dash)
                 let matchStart = colA.match(/^\s*(\d+)\s*[-_]\s*(.+)$/);
                 let matchEnd = colA.match(/^(.+)\s*[-_]\s*(\d+)\s*$/);
 
@@ -1263,26 +1294,22 @@
                     };
                     db.push(currentCompany);
 
-                    // Sometimes violation is in colB on the same row (Flat or Tabular Pivot Table)
                     if (colB && isNaN(colB) && colB.length > 2) {
                         let vCount = getCount(row.slice(1));
                         if (vCount === 0) vCount = count;
                         currentCompany.violations.push({ type: colB, count: vCount });
                     }
                 } else {
-                    // Not a company format, must be a violation detail for the current company
                     if (currentCompany) {
                         let vType = "";
                         let vCount = count;
 
-                        // Check where the text is located
                         if (colA && !colA.match(/^\d+$/) && colA.length > 2) {
                             vType = colA;
                         } else if (!colA && colB && !colB.match(/^\d+$/) && colB.length > 2) {
                             vType = colB;
                         }
 
-                        // Avoid adding "Totals" or the company name itself as a violation
                         if (vType && vType !== currentCompany.originalStr && !vType.includes("إجمالي") && !vType.includes("Total")) {
                             currentCompany.violations.push({ type: vType, count: vCount });
                         }
@@ -1303,7 +1330,6 @@
                     const workbook = XLSX.read(data, {type: 'array'});
                     const firstSheetName = workbook.SheetNames[0];
                     const worksheet = workbook.Sheets[firstSheetName];
-                    // Parse as 2D Array
                     const jsonData = XLSX.utils.sheet_to_json(worksheet, {header: 1});
 
                     const db = processExcelData(jsonData);
@@ -1359,7 +1385,6 @@
                             </ul>
                         `;
                     } else {
-                        // Safe fallback UI without printing garbage text
                         violationsHtml = `<div style="margin-top: 6px; font-size: 0.85rem; color: #7f1d1d; font-style: italic;">(لم يتم العثور على تفاصيل المخالفات، يرجى عمل Expand للصفوف في الشيت قبل رفعه)</div>`;
                     }
 
@@ -1385,10 +1410,6 @@
             }
             resultsSec.style.display = 'block';
         }
-
-        // Initialize status on load
-        window.addEventListener('DOMContentLoaded', updateDBStatus);
-
 
         // --- Navigation ---
         function showHome() {
@@ -1616,7 +1637,6 @@
                 return;
             }
 
-            // Check if sample weight is valid (Sample Method)
             if (!isNaN(sampleW) && sampleW > 0) {
                 let html = `<h4>💡 خطوات الحل الحسابية بالتفصيل (طريقة عينة الـ 100 كجم):</h4><ol>`;
                 html += `<li><b>تقييم عينة الـ 100 كجم الموزونة:</b><br>
@@ -1647,7 +1667,6 @@
                 html += `</ol>`;
                 box.innerHTML = html;
             } 
-            // Else, if total actual weight is valid (Total Weight Method)
             else if (!isNaN(totalActualW) && totalActualW > 0) {
                 let html = `<h4>💡 خطوات الحل الحسابية بالتفصيل (طريقة وزن الشحنة بالكامل):</h4><ol>`;
                 html += `<li><b>حساب الحد الأدنى المقبول للوزن (نسبة سماح 1%):</b><br>
