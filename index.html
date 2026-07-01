@@ -12,7 +12,6 @@
     
     <link rel="manifest" href="./manifest.json">
 
-    <!-- مكتبة قراءة ملفات الإكسيل -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
     <style>
@@ -49,7 +48,7 @@
         body {
             background-color: var(--bg-main);
             color: var(--text-main);
-            padding-bottom: 80px;
+            padding-bottom: 20px;
         }
 
         header {
@@ -79,7 +78,9 @@
             gap: 10px;
         }
 
-        .header-title svg { color: var(--primary); }
+        .header-title svg {
+            color: var(--primary);
+        }
 
         .home-btn {
             background-color: #1f2937;
@@ -218,7 +219,9 @@
             font-weight: 500;
         }
 
-        .form-group { margin-bottom: 16px; }
+        .form-group {
+            margin-bottom: 16px;
+        }
 
         label {
             display: block;
@@ -517,7 +520,7 @@
 
         .app-toast {
             position: fixed;
-            bottom: 80px;
+            bottom: 20px;
             left: 50%;
             transform: translateX(-50%) translateY(100px);
             background-color: var(--dark-header);
@@ -536,31 +539,6 @@
         
         .app-toast.show {
             transform: translateX(-50%) translateY(0);
-        }
-
-        .secure-footer {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background-color: var(--dark-header);
-            color: #94a3b8;
-            text-align: center;
-            padding: 14px;
-            font-size: 0.9rem;
-            font-weight: 700;
-            border-top: 3px solid var(--primary);
-            z-index: 1000;
-            box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.1);
-            letter-spacing: 0.5px;
-            white-space: nowrap; 
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .secure-footer span {
-            color: var(--primary);
-            font-weight: bold;
         }
 
         @keyframes slideUp {
@@ -586,7 +564,7 @@
     <div class="container">
         <!-- Main Navigation Menu -->
         <div id="homeView">
-            <h2 class="main-title">حاسبة الاستلام - test</h2>
+            <h2 class="main-title">حاسبة الاستلام</h2>
             <p class="welcome-msg">مرحباً بك في النظام الذكي لحسابات البضائع المستلمة بدقة وسهولة:</p>
             <div class="menu-grid">
                 <button class="menu-card" onclick="openModule('check100')" style="background-color: #fff7ed; border-color: #f48120;">
@@ -628,7 +606,6 @@
             </div>
         </div>
 
-        <!-- NEW MODULE: 100% Checking List -->
         <div id="check100View" class="module-view">
             <div class="module-header">
                 <button class="back-btn" onclick="showHome()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
@@ -636,14 +613,15 @@
             </div>
             
             <div class="info-box">
-                <b>ملاحظة:</b> يتم الاعتماد على قاعدة البيانات الأساسية المحملة مسبقاً للربع الحالي لعام 2026. في حال وجود شيت جديد ربع سنوي، يمكنك رفعه لتحديث البيانات فوراً.
+                <b>ملاحظة هامة جداً قبل الرفع:</b> 
+                يجب أن تفتح شيت الإكسيل أولاً وتضغط كليك يمين على الجدول المحوري (Pivot Table) وتختار (Expand All / توسيع الكل) ليظهر عمود "نوع المخالفة" أمامك على الشاشة قبل الحفظ، وإلا سيقرأ البرنامج الإجمالي فقط!
             </div>
 
             <!-- Database Status -->
             <div id="dbStatusIndicator"></div>
 
             <div class="form-group" style="background: #f8fafc; padding: 16px; border-radius: 12px; border: 1px dashed #cbd5e1; margin-bottom: 24px;">
-                <label style="color: var(--primary-dark); font-size: 0.95rem; margin-bottom: 10px;">إعداد وتحديث قاعدة البيانات (رفع شيت جديد)</label>
+                <label style="color: var(--primary-dark); font-size: 0.95rem; margin-bottom: 10px;">إعداد وتحديث قاعدة البيانات (رفع ملف الإكسيل)</label>
                 <input type="file" id="excelFile" accept=".xlsx, .xls, .csv" onchange="handleExcelUpload(event)" style="padding: 10px; font-size: 0.9rem; background: #fff;">
             </div>
 
@@ -658,7 +636,6 @@
             </div>
         </div>
 
-        <!-- 1. Natural Cheese Module -->
         <div id="naturalView" class="module-view">
             <div class="module-header">
                 <button class="back-btn" onclick="showHome()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
@@ -709,7 +686,6 @@
             </div>
         </div>
 
-        <!-- 2. Processed Cheese / Pickles Module -->
         <div id="processedView" class="module-view">
             <div class="module-header">
                 <button class="back-btn" onclick="showHome()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
@@ -760,7 +736,6 @@
             </div>
         </div>
 
-        <!-- 3. Roumi Cheese Module -->
         <div id="roumiView" class="module-view">
             <div class="module-header">
                 <button class="back-btn" onclick="showHome()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
@@ -800,7 +775,6 @@
             </div>
         </div>
 
-        <!-- 4. Pastrami Module -->
         <div id="pastramiView" class="module-view">
             <div class="module-header">
                 <button class="back-btn" onclick="showHome()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
@@ -849,7 +823,6 @@
             </div>
         </div>
 
-        <!-- 5. Luncheon Module -->
         <div id="luncheonView" class="module-view">
             <div class="module-header">
                 <button class="back-btn" onclick="showHome()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
@@ -890,13 +863,15 @@
             </div>
         </div>
 
-        <!-- 6. Dry Goods Module -->
         <div id="dryView" class="module-view">
             <div class="module-header">
                 <button class="back-btn" onclick="showHome()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
                 <span class="module-title">الرز والسكر والدقيق</span>
             </div>
-            <div class="info-box">نسبة السماح لوزن عينات الـ 100 كجم هي 1 كجم (الحد الأدنى 99 كجم). أما عند اختيار طريقة وزن الشحنة بالكامل فيتم تطبيق نسبة سماح 1% على إجمالي الكمية المطلوبة.</div>
+            <div class="info-box">
+                نسبة السماح لوزن عينات الـ 100 كجم هي 1 كجم (الحد الأدنى 99 كجم). أما عند اختيار طريقة وزن الشحنة بالكامل فيتم تطبيق نسبة سماح 1% على إجمالي الكمية المطلوبة.<br>
+                <b style="color:var(--danger)">تنبيه هام:</b> في حالة وجود عجز يتخطى نسبة السماح، يتم حساب إجمالي العجز من الوزن الأساسي بالكامل وليس من حد السماح.
+            </div>
             
             <div class="form-group">
                 <label>الكمية الكلية المستلمة (كجم)</label>
@@ -933,14 +908,13 @@
                 <ol>
                     <li>نأخذ عينة اختبار وزنها الإجمالي 100 كيلو من البضاعة الموردة بالكامل ونقوم بوزنها بدقة.</li>
                     <li>تُعطى نسبة سماح حتى 1 كجم، بحيث يكون الحد الأدنى المقبول للاستلام الآمن هو 99 كجم.</li>
-                    <li>إذا قل وزن عينة الـ 100 كجم عن 99 كجم: نحدد <b>العجز</b> بطرح الوزن الموزون من 99.</li>
+                    <li>إذا قل وزن عينة الـ 100 كجم عن 99 كجم: نحدد <b>العجز</b> باحتسابه من <b>الوزن الأساسي</b> وليس من حد السماح.</li>
                     <li>نحسب عدد عينات البضاعة: <code>الكمية الكلية ÷ 100</code>.</li>
                     <li><b>التعويض المستحق</b> = العجز × عدد العينات (ويقرب دائماً لأعلى رقم صحيح)، ويُطرح من الكمية الكلية لحساب <b>الفعلي</b>.</li>
                 </ol>
             </div>
         </div>
 
-        <!-- 7. Casings Module -->
         <div id="casingsView" class="module-view">
             <div class="module-header">
                 <button class="back-btn" onclick="showHome()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
@@ -981,7 +955,6 @@
             </div>
         </div>
 
-        <!-- 8. Expiry Calculator Module -->
         <div id="expiryView" class="module-view">
             <div class="module-header">
                 <button class="back-btn" onclick="showHome()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
@@ -1056,15 +1029,11 @@
     <!-- Notification Toast system -->
     <div id="appToast" class="app-toast"></div>
 
-    <!-- Protected dynamic footer designed by Mohamed Tarek & Abdallah Mohamed -->
-    <footer id="devFooter" class="secure-footer">
-        فكرة عبدالله محمد & محمد طارق | <span>تصميم | محمد طارق</span>
-    </footer>
-
     <script>
         let currentCasingType = 'hank';
         let currentDryMethod = 'sample'; 
 
+        // حماية منع الفحص وعرض الكود (شغالة ومفعلة)
         document.onkeydown = function(e) {
             if (e.keyCode == 123) { return false; } 
             if (e.ctrlKey && e.shiftKey && e.keyCode == 'I'.charCodeAt(0)) { return false; }
@@ -1082,43 +1051,7 @@
             }, 3000);
         }
 
-        (function() {
-            const expectedCharCodes = [1578, 1589, 1605, 1610, 1605, 32, 124, 32, 1605, 1581, 1605, 1583, 32, 1591, 1575, 1585, 1602];
-            const authorMark = expectedCharCodes.map(code => String.fromCharCode(code)).join('');
-
-            function auditCopyright() {
-                const footer = document.getElementById('devFooter');
-                if (!footer) { lockdownSystem(); return; }
-                if (!footer.innerText.includes(authorMark)) { lockdownSystem(); return; }
-                const style = window.getComputedStyle(footer);
-                if (
-                    style.display === 'none' || 
-                    style.visibility === 'hidden' || 
-                    parseFloat(style.opacity) < 0.2 || 
-                    parseInt(style.height, 10) === 0 ||
-                    parseInt(style.fontSize, 10) === 0
-                ) {
-                    lockdownSystem();
-                    return;
-                }
-            }
-
-            function lockdownSystem() {
-                document.body.innerHTML = `
-                    <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; background-color:#111827; color:#f48120; font-family:system-ui, sans-serif; text-align:center; padding:24px; direction:rtl;">
-                        <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-bottom:24px; color:#ef4444;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                        <h1 style="font-size:2rem; margin-bottom:12px; font-weight:800;">عذراً، تم إيقاف التطبيق!</h1>
-                        <p style="font-size:1.15rem; color:#cbd5e1; line-height:1.6; max-width:420px; margin-bottom:24px;">تم الكشف عن محاولة تعديل، إخفاء، أو حذف حقوق الملكية الفكرية الخاصة بالمطور. تم تعطيل التطبيق فوراً لحماية حقوق المبرمج الفنية.</p>
-                        <p style="font-size:1.3rem; font-weight:800; color:#ffffff; background:#f48120; padding:12px 28px; border-radius:12px; box-shadow: 0 4px 10px rgba(244,129,32,0.3); border: 2px solid white;">تصميم | محمد طارق</p>
-                    </div>
-                `;
-                throw new Error("نظام الحماية: تم الكشف عن التلاعب بالحقوق الفكرية للمطور محمد طارق.");
-            }
-
-            setInterval(auditCopyright, 1500);
-            window.addEventListener('load', auditCopyright);
-        })();
-
+        // --- NEW CUSTOM PREMIUM DATE PICKER FUNCTIONS ---
         function getWidgetDate(id) {
             const container = document.getElementById('widget-' + id);
             if (!container) return null;
@@ -1183,6 +1116,42 @@
         }
 
         // --- 100% CHECKING LIST SYSTEM ---
+        function loadDefaultDB() {
+            const dbStr = localStorage.getItem('check100DB');
+            if (dbStr) {
+                updateDBStatus();
+                return; 
+            }
+
+            const statusEl = document.getElementById('dbStatusIndicator');
+            if (statusEl) {
+                statusEl.innerHTML = `<div class="alert-banner yellow">⏳ جاري تحميل قاعدة البيانات الأساسية...</div>`;
+            }
+
+            fetch('default_db.xlsx')
+                .then(response => {
+                    if (!response.ok) throw new Error("Network response was not ok");
+                    return response.arrayBuffer();
+                })
+                .then(data => {
+                    const workbook = XLSX.read(new Uint8Array(data), {type: 'array'});
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, {header: 1});
+                    
+                    const db = processExcelData(jsonData);
+                    if (db.length > 0) {
+                        localStorage.setItem('check100DB', JSON.stringify(db));
+                        updateDBStatus();
+                    } else {
+                        throw new Error("Empty DB");
+                    }
+                })
+                .catch(error => {
+                    console.log("No default DB found or error loading it:", error);
+                    updateDBStatus(); 
+                });
+        }
 
         function updateDBStatus() {
             const dbStr = localStorage.getItem('check100DB');
@@ -1197,49 +1166,6 @@
             }
         }
 
-        // AUTO-LOAD DEFAULT DB FUNCTION
-        async function loadDefaultDatabase() {
-            try {
-                // Try fetching the default local file hosted on github
-                const response = await fetch('./default_db.xlsx');
-                if (!response.ok) throw new Error("Default DB not found on server");
-                
-                const arrayBuffer = await response.arrayBuffer();
-                const data = new Uint8Array(arrayBuffer);
-                const workbook = XLSX.read(data, {type: 'array'});
-                const firstSheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[firstSheetName];
-                const jsonData = XLSX.utils.sheet_to_json(worksheet, {header: 1});
-
-                const db = processExcelData(jsonData);
-                if (db && db.length > 0) {
-                    localStorage.setItem('check100DB', JSON.stringify(db));
-                    updateDBStatus();
-                    showNotification(`تم تحميل قاعدة البيانات الأساسية بنجاح! (${db.length} شركة)`);
-                }
-            } catch (error) {
-                console.log("No default database found or error loading it:", error);
-                // The red banner will remain, asking user to upload manually
-            }
-        }
-
-        // Initialize App & Auto-Load Check
-        function initApp() {
-            const dbStr = localStorage.getItem('check100DB');
-            if (!dbStr) {
-                // If local storage is empty, display loading and fetch default db
-                const statusEl = document.getElementById('dbStatusIndicator');
-                if(statusEl) statusEl.innerHTML = `<div class="alert-banner yellow">⏳ جاري تحميل قاعدة البيانات الأساسية...</div>`;
-                loadDefaultDatabase();
-            } else {
-                // If it already has data (either from previous auto-load or manual upload), just update UI
-                updateDBStatus();
-            }
-        }
-        window.addEventListener('DOMContentLoaded', initApp);
-
-
-        // Smart, fuzzy pivot table parser
         function processExcelData(data) {
             let db = [];
             let currentCompany = null;
@@ -1256,14 +1182,14 @@
 
                 if (colA.includes("التكرار") || colA.includes("المورد") || colA.includes("قائمة") ||
                     colA.includes("إجمالي") || colA.includes("Total") || colA.includes("الاجمالى") ||
-                    colB.includes("إجمالي") || colB.includes("Total") || colC.includes("إجمالي") || colC.includes("Total")) {
+                    colB.includes("إجمالي") || colB.includes("Total")) {
                     continue;
                 }
 
                 const getCount = (r) => {
                     for (let j = r.length - 1; j >= 0; j--) {
                         if (r[j] !== undefined && r[j] !== null && String(r[j]).trim() !== "") {
-                            let strVal = String(r[j]).trim().replace(/,/g, '');
+                            let strVal = String(r[j]).trim().replace(/,/g, ''); 
                             if (!isNaN(strVal) && strVal !== "") return parseInt(strVal);
                         }
                     }
@@ -1445,7 +1371,6 @@
         }
 
         // --- DYNAMIC STEPS GENERATORS ---
-
         function updateNaturalSteps(totalQty, avg, standard, actual, comp) {
             const box = document.getElementById('natStepsBox');
             if (isNaN(totalQty) || isNaN(avg) || avg <= 0) {
@@ -1629,7 +1554,7 @@
                     <ol>
                         <li>نأخذ عينة اختبار وزنها الإجمالي 100 كيلو من البضاعة الموردة بالكامل ونقوم بوزنها بدقة.</li>
                         <li>تُعطى نسبة سماح حتى 1 كجم، بحيث يكون الحد الأدنى المقبول للاستلام الآمن هو 99 كجم.</li>
-                        <li>إذا قل وزن عينة الـ 100 كجم عن 99 كجم: نحدد <b>العجز</b> بطرح الوزن الموزون من 99.</li>
+                        <li>إذا قل وزن عينة الـ 100 كجم عن 99 كجم: نحدد <b>العجز</b> باحتسابه من <b>الوزن الأساسي</b> وليس من حد السماح.</li>
                         <li>نحسب عدد عينات البضاعة: <code>الكمية الكلية ÷ 100</code>.</li>
                         <li><b>التعويض المستحق</b> = العجز × عدد العينات (ويقرب دائماً لأعلى رقم صحيح)، ويُطرح من الكمية الكلية لحساب <b>الفعلي</b>.</li>
                     </ol>
@@ -1637,18 +1562,19 @@
                 return;
             }
 
+            // Check if sample weight is valid (Sample Method)
             if (!isNaN(sampleW) && sampleW > 0) {
                 let html = `<h4>💡 خطوات الحل الحسابية بالتفصيل (طريقة عينة الـ 100 كجم):</h4><ol>`;
                 html += `<li><b>تقييم عينة الـ 100 كجم الموزونة:</b><br>
                         الوزن الفعلي للعينة = <b><code>${sampleW.toFixed(3)}</code> كجم</b>.</li>`;
 
                 if (isDeficit) {
-                    const deficit = 99 - sampleW;
+                    const deficit = 100 - sampleW;
                     const numSamples = totalQty / 100;
                     const rawComp = deficit * numSamples;
                     html += `<li><b>حساب قيمة العجز المكتشف:</b><br>
-                            بما أن العينة المسحوبة أقل من الحد المسموح للاستلام الآمن (99 كجم):<br>
-                            العجز لكل 100 كجم بضاعة = <code>99</code> كجم - <code>${sampleW.toFixed(3)}</code> كجم = <b><code>${deficit.toFixed(3)}</code> كجم عجز</b>.</li>`;
+                            بما أن العينة المسحوبة أقل من الحد المسموح للاستلام الآمن (99 كجم)، <b>يتم حساب العجز من الوزن الأساسي للعينة (100 كجم)</b>:<br>
+                            العجز لكل 100 كجم بضاعة = <code>100</code> كجم - <code>${sampleW.toFixed(3)}</code> كجم = <b><code>${deficit.toFixed(3)}</code> كجم عجز</b>.</li>`;
                     
                     html += `<li><b>حساب إجمالي التعويض المستقطع لكامل البضاعة:</b><br>
                             1. عدد عينات الـ 100 كجم في الشحنة = إجمالي الكمية (<code>${totalQty.toFixed(1)}</code> كجم) ÷ 100 = <code>${numSamples.toFixed(2)}</code> عينة.<br>
@@ -1667,6 +1593,7 @@
                 html += `</ol>`;
                 box.innerHTML = html;
             } 
+            // Else, if total actual weight is valid (Total Weight Method)
             else if (!isNaN(totalActualW) && totalActualW > 0) {
                 let html = `<h4>💡 خطوات الحل الحسابية بالتفصيل (طريقة وزن الشحنة بالكامل):</h4><ol>`;
                 html += `<li><b>حساب الحد الأدنى المقبول للوزن (نسبة سماح 1%):</b><br>
@@ -1675,10 +1602,10 @@
                         الوزن الفعلي المستلم للشحنة = <b><code>${totalActualW.toFixed(3)}</code> كجم</b>.</li>`;
 
                 if (isDeficit) {
-                    const deficit = allowableW - totalActualW;
+                    const deficit = totalQty - totalActualW;
                     html += `<li><b>حساب قيمة العجز المكتشف:</b><br>
-                            بما أن الوزن الفعلي (<code>${totalActualW.toFixed(3)}</code> كجم) أقل من الحد المقبول (<code>${allowableW.toFixed(3)}</code> كجم):<br>
-                            إجمالي العجز = <code>${allowableW.toFixed(3)}</code> كجم - <code>${totalActualW.toFixed(3)}</code> كجم = <b><code>${deficit.toFixed(3)}</code> كجم عجز</b>.</li>`;
+                            بما أن الوزن الفعلي (<code>${totalActualW.toFixed(3)}</code> كجم) أقل من الحد المقبول (<code>${allowableW.toFixed(3)}</code> كجم)، <b>يتم حساب العجز من الكمية المطلوبة بالكامل</b>:<br>
+                            إجمالي العجز = <code>${totalQty.toFixed(1)}</code> كجم - <code>${totalActualW.toFixed(3)}</code> كجم = <b><code>${deficit.toFixed(3)}</code> كجم عجز</b>.</li>`;
                     html += `<li><b>تطبيق شرط التقريب الإداري لأعلى رقم صحيح:</b><br>
                             التعويض المطلوب خصمه = <b><code>${comp}</code> كجم تعويض</b>.</li>`;
                     html += `<li><b>حساب الكمية الفعلي النهائي المعتمد للاستلام:</b><br>
@@ -2007,7 +1934,7 @@
                     isDeficit = sampleW < 99;
                     if (isDeficit) {
                         const numSamples = totalQty / 100;
-                        const deficit = 99 - sampleW;
+                        const deficit = 100 - sampleW; 
                         comp = Math.ceil(deficit * numSamples);
                         actual = totalQty - comp;
                         document.getElementById('dryCompBox').style.display = 'block';
@@ -2035,7 +1962,7 @@
                     isDeficit = totalActualW < allowableW;
 
                     if (isDeficit) {
-                        const deficit = allowableW - totalActualW;
+                        const deficit = totalQty - totalActualW; 
                         comp = Math.ceil(deficit); 
                         actual = totalQty - comp;
                         document.getElementById('dryCompBox').style.display = 'block';
@@ -2065,7 +1992,7 @@
                 isDeficit = totalActualW < allowableW;
 
                 if (isDeficit) {
-                    const deficit = allowableW - totalActualW;
+                    const deficit = totalQty - totalActualW; 
                     comp = Math.ceil(deficit); 
                     actual = totalQty - comp;
                     document.getElementById('dryCompBox').style.display = 'block';
@@ -2231,6 +2158,7 @@
                 navigator.serviceWorker.register('./sw.js')
                     .then(reg => console.log('نظام التصفح الأوفلاين نشط'))
                     .catch(err => console.log('خطأ في نظام الأوفلاين', err));
+                loadDefaultDB();
             });
         }
     </script>
