@@ -1580,6 +1580,16 @@
                                     <div class="result-box-label" id="${calcId}_diffLabel">فرق عن الاستاندر</div>
                                     <div class="result-box-value" id="${calcId}_diffVal">0 كجم</div>
                                 </div>
+                                <div class="steps-box" id="${calcId}_stepsBox" style="margin-top: 16px;">
+                                    <h4>💡 طريقة ومراحل الحساب:</h4>
+                                    <ol>
+                                        <li>الصافي = الوزن القائم على الميزان - (فارغ الكرتونة × عدد الكراتين) - (فارغ الكيس × عدد الأكياس).</li>
+                                        <li>الاستاندر الكلي = وزن الوحدة (الاستاندر) × عدد الوحدات (عدد الكراتين له الأولوية، وإلا عدد الأكياس).</li>
+                                        <li>لو الصافي أقل من أو يساوي الاستاندر الكلي: يُعتمد الصافي كاملاً كوزن فعلي، ولا يوجد تعويض (سياسة عدم تجاوز الاستاندر).</li>
+                                        <li>لو الصافي زاد عن الاستاندر الكلي بفارق حتى 50 جرام: يُعتمد الاستاندر الكلي كوزن فعلي، ولا يُحسب تعويض على الفرق البسيط.</li>
+                                        <li>لو الصافي زاد عن الاستاندر الكلي بفارق أكبر من 50 جرام: يُعتمد الاستاندر الكلي كوزن فعلي، ويُحسب الفارق بالكامل كـ <b>تعويض مستحق</b>.</li>
+                                    </ol>
+                                </div>
                             </div>`;
                     }
 
@@ -1636,6 +1646,7 @@
             if (isNaN(gross) || gross <= 0) {
                 resultBox.style.display = 'none';
                 if (diffBox) diffBox.style.display = 'none';
+                updateTareCalcSteps(calcId, NaN, cartonTare, bagTare, cartons, bags, NaN, NaN, NaN, NaN);
                 return;
             }
 
@@ -1660,6 +1671,7 @@
                 resultBox.className = net >= 0 ? 'result-box green' : 'result-box red';
                 resultBox.style.display = 'block';
                 if (diffBox) diffBox.style.display = 'none';
+                updateTareCalcSteps(calcId, gross, cartonTare, bagTare, cartons, bags, net, NaN, NaN, NaN);
                 return;
             }
 
@@ -1673,6 +1685,7 @@
                 resultBox.className = 'result-box green';
                 resultBox.style.display = 'block';
                 if (diffBox) diffBox.style.display = 'none';
+                updateTareCalcSteps(calcId, gross, cartonTare, bagTare, cartons, bags, net, standard, units, diff);
             } else if (diff <= 0.050) {
                 // فرق بسيط لغاية 50 جرام: لا يُحسب تعويض، يُعتمد الاستاندر الكلي كوزن فعلي
                 resultLabel.innerText = 'الوزن الفعلي المعتمد (على الاستاندر)';
@@ -1684,6 +1697,7 @@
                 diffVal.innerText = (diff * 1000).toFixed(0) + ' جرام (لا يُحسب تعويض)';
                 diffBox.className = 'result-box blue';
                 diffBox.style.display = 'block';
+                updateTareCalcSteps(calcId, gross, cartonTare, bagTare, cartons, bags, net, standard, units, diff);
             } else {
                 // فرق أكبر من 50 جرام: يُعتمد الاستاندر الكلي كوزن فعلي، والفارق يُحسب تعويض
                 resultLabel.innerText = 'الوزن الفعلي المعتمد (على الاستاندر)';
@@ -1695,7 +1709,70 @@
                 diffVal.innerText = diff.toFixed(3) + ' كجم';
                 diffBox.className = 'result-box orange';
                 diffBox.style.display = 'block';
+                updateTareCalcSteps(calcId, gross, cartonTare, bagTare, cartons, bags, net, standard, units, diff);
             }
+        }
+
+        function updateTareCalcSteps(calcId, gross, cartonTare, bagTare, cartons, bags, net, standard, units, diff) {
+            const box = document.getElementById(calcId + '_stepsBox');
+            if (!box) return;
+
+            if (isNaN(gross) || gross <= 0) {
+                box.innerHTML = `
+                    <h4>💡 طريقة ومراحل الحساب:</h4>
+                    <ol>
+                        <li>الصافي = الوزن القائم على الميزان - (فارغ الكرتونة × عدد الكراتين) - (فارغ الكيس × عدد الأكياس).</li>
+                        <li>الاستاندر الكلي = وزن الوحدة (الاستاندر) × عدد الوحدات (عدد الكراتين له الأولوية، وإلا عدد الأكياس).</li>
+                        <li>لو الصافي أقل من أو يساوي الاستاندر الكلي: يُعتمد الصافي كاملاً كوزن فعلي، ولا يوجد تعويض (سياسة عدم تجاوز الاستاندر).</li>
+                        <li>لو الصافي زاد عن الاستاندر الكلي بفارق حتى 50 جرام: يُعتمد الاستاندر الكلي كوزن فعلي، ولا يُحسب تعويض على الفرق البسيط.</li>
+                        <li>لو الصافي زاد عن الاستاندر الكلي بفارق أكبر من 50 جرام: يُعتمد الاستاندر الكلي كوزن فعلي، ويُحسب الفارق بالكامل كـ <b>تعويض مستحق</b>.</li>
+                    </ol>
+                `;
+                return;
+            }
+
+            const cartonDeduct = cartonTare * cartons;
+            const bagDeduct = bagTare * bags;
+            const totalTare = cartonDeduct + bagDeduct;
+
+            let html = `<h4>💡 خطوات الحل الحسابية بالتفصيل:</h4><ol>`;
+
+            // خطوة 1: حساب الفوارغ
+            let tareLine = '';
+            if (cartons > 0 && bags > 0) {
+                tareLine = `إجمالي الفوارغ = (فارغ الكرتونة <code>${cartonTare}</code> × <code>${cartons}</code> كرتونة) + (فارغ الكيس <code>${bagTare}</code> × <code>${bags}</code> كيس)<br>إجمالي الفوارغ = <code>${cartonDeduct.toFixed(3)}</code> + <code>${bagDeduct.toFixed(3)}</code> = <b><code>${totalTare.toFixed(3)}</code> كجم</b>.`;
+            } else if (cartons > 0) {
+                tareLine = `إجمالي الفوارغ = فارغ الكرتونة <code>${cartonTare}</code> × <code>${cartons}</code> كرتونة = <b><code>${totalTare.toFixed(3)}</code> كجم</b>.`;
+            } else if (bags > 0) {
+                tareLine = `إجمالي الفوارغ = فارغ الكيس <code>${bagTare}</code> × <code>${bags}</code> كيس = <b><code>${totalTare.toFixed(3)}</code> كجم</b>.`;
+            } else {
+                tareLine = `لم يتم إدخال عدد كراتين أو أكياس، فلا يوجد فوارغ تُخصم (إجمالي الفوارغ = <code>0.000</code> كجم).`;
+            }
+            html += `<li><b>حساب إجمالي الفوارغ المخصومة:</b><br>${tareLine}</li>`;
+
+            // خطوة 2: حساب الصافي
+            html += `<li><b>حساب الوزن الصافي:</b><br>الصافي = الوزن القائم على الميزان (<code>${gross.toFixed(3)}</code> كجم) - إجمالي الفوارغ (<code>${totalTare.toFixed(3)}</code> كجم)<br>الصافي = <b><code>${net.toFixed(3)}</code> كجم</b>.</li>`;
+
+            if (isNaN(standard) || isNaN(units) || units <= 0 || standard <= 0) {
+                html += `<li><b>المقارنة بالاستاندر:</b><br>لا توجد بيانات كافية (وزن وحدة/استاندر أو عدد كراتين/أكياس) لعمل مقارنة بالاستاندر الكلي، فيتم اعتماد الصافي مباشرة كوزن نهائي = <b><code>${net.toFixed(3)}</code> كجم</b>.</li>`;
+                html += `</ol>`;
+                box.innerHTML = html;
+                return;
+            }
+
+            const totalStandard = standard * units;
+            const unitsSource = cartons > 0 ? `عدد الكراتين (${cartons})` : `عدد الأكياس (${bags})`;
+            html += `<li><b>حساب الاستاندر الكلي المسموح به:</b><br>الاستاندر الكلي = وزن الوحدة (الاستاندر) (<code>${standard.toFixed(3)}</code> كجم) × ${unitsSource}<br>الاستاندر الكلي = <b><code>${totalStandard.toFixed(3)}</code> كجم</b>.</li>`;
+
+            if (diff <= 0) {
+                html += `<li><b>مقارنة الصافي بالاستاندر الكلي (سياسة عدم تجاوز الاستاندر):</b><br>بما أن الصافي (<code>${net.toFixed(3)}</code> كجم) <b>أقل من أو يساوي</b> الاستاندر الكلي (<code>${totalStandard.toFixed(3)}</code> كجم):<br>يُعتمد الصافي بالكامل كوزن فعلي دون أي تعويض:<br><code>الوزن الفعلي المعتمد</code> = <b><code>${net.toFixed(3)}</code> كجم</b>.</li>`;
+            } else if (diff <= 0.050) {
+                html += `<li><b>مقارنة الصافي بالاستاندر الكلي (سياسة عدم تجاوز الاستاندر):</b><br>بما أن الصافي (<code>${net.toFixed(3)}</code> كجم) <b>أكبر</b> من الاستاندر الكلي (<code>${totalStandard.toFixed(3)}</code> كجم) بفارق بسيط:<br>الفارق = <code>${net.toFixed(3)}</code> - <code>${totalStandard.toFixed(3)}</code> = <code>${diff.toFixed(3)}</code> كجم (<code>${(diff*1000).toFixed(0)}</code> جرام).<br>بما أن الفارق أقل من أو يساوي 50 جرام، <b>لا يُحسب تعويض</b> ويُعتمد الاستاندر الكلي مباشرة كوزن فعلي:<br><code>الوزن الفعلي المعتمد</code> = <b><code>${totalStandard.toFixed(3)}</code> كجم</b>.</li>`;
+            } else {
+                html += `<li><b>مقارنة الصافي بالاستاندر الكلي (سياسة عدم تجاوز الاستاندر):</b><br>بما أن الصافي (<code>${net.toFixed(3)}</code> كجم) <b>أكبر</b> من الاستاندر الكلي (<code>${totalStandard.toFixed(3)}</code> كجم) بفارق يتخطى 50 جرام:<br>1. يُعتمد الاستاندر الكلي كوزن فعلي للاستلام:<br><code>الوزن الفعلي المعتمد</code> = <b><code>${totalStandard.toFixed(3)}</code> كجم</b>.<br>2. يُحسب الفارق بالكامل كتعويض مستحق:<br><code>التعويض المستحق</code> = <code>${net.toFixed(3)}</code> - <code>${totalStandard.toFixed(3)}</code> = <b><code>${diff.toFixed(3)}</code> كجم</b>.</li>`;
+            }
+            html += `</ol>`;
+            box.innerHTML = html;
         }
 
         window.addEventListener('DOMContentLoaded', updateTaresDBStatus);
