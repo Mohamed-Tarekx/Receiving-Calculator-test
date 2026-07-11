@@ -1536,8 +1536,10 @@
                         : '';
                     const hasCarton = m.cartonTare !== "" && !isNaN(parseFloat(m.cartonTare)) && parseFloat(m.cartonTare) > 0;
                     const hasBag = m.bagTare !== "" && !isNaN(parseFloat(m.bagTare)) && parseFloat(m.bagTare) > 0;
+                    const hasStandard = m.unitWeight !== "" && !isNaN(parseFloat(m.unitWeight)) && parseFloat(m.unitWeight) > 0;
                     const cartonVal = hasCarton ? parseFloat(m.cartonTare) : 0;
                     const bagVal = hasBag ? parseFloat(m.bagTare) : 0;
+                    const standardDefault = hasStandard ? parseFloat(m.unitWeight) : 0;
                     const calcId = 'tareCalc' + idx;
 
                     let calcFieldsHtml = '';
@@ -1557,18 +1559,30 @@
                     }
 
                     let calcBoxHtml = '';
-                    if (hasCarton || hasBag) {
+                    if (hasCarton || hasBag || hasStandard) {
                         calcBoxHtml = `
                             <button class="add-sample-btn" style="margin-top: 10px; width: 100%;" onclick="toggleTareCalc('${calcId}')">🧮 حساب الصافي</button>
                             <div id="${calcId}_box" style="display: none; margin-top: 12px; background: #f8fafc; padding: 14px; border-radius: 10px; border: 1px dashed #cbd5e1;">
+                                <div class="form-group" style="margin-bottom: 10px;">
+                                    <label style="font-size: 0.85rem; margin-bottom: 5px;">عدد الوحدات (حسب المستلم من المورد)</label>
+                                    <input type="number" id="${calcId}_units" placeholder="مثال: 5" oninput="computeTareNet('${calcId}', ${cartonVal}, ${bagVal})">
+                                </div>
+                                <div class="form-group" style="margin-bottom: 10px;">
+                                    <label style="font-size: 0.85rem; margin-bottom: 5px;">وزن الوحدة (الاستاندر) - قابل للتعديل</label>
+                                    <input type="number" id="${calcId}_standard" value="${hasStandard ? standardDefault : ''}" placeholder="مثال: 1" oninput="computeTareNet('${calcId}', ${cartonVal}, ${bagVal})">
+                                </div>
                                 ${calcFieldsHtml}
                                 <div class="form-group" style="margin-bottom: 0;">
-                                    <label style="font-size: 0.85rem; margin-bottom: 5px;">الوزن القائم على الميزان (كجم)</label>
+                                    <label style="font-size: 0.85rem; margin-bottom: 5px;">الوزن الإجمالي القائم على الميزان (كجم)</label>
                                     <input type="number" id="${calcId}_gross" placeholder="مثال: 120" oninput="computeTareNet('${calcId}', ${cartonVal}, ${bagVal})">
                                 </div>
                                 <div class="result-box green" style="margin-top: 12px; margin-bottom: 0; display: none;" id="${calcId}_resultBox">
-                                    <div class="result-box-label">الوزن الصافي</div>
+                                    <div class="result-box-label" id="${calcId}_resultLabel">الوزن الصافي</div>
                                     <div class="result-box-value" id="${calcId}_resultVal">0 كجم</div>
+                                </div>
+                                <div class="result-box" style="margin-top: 10px; margin-bottom: 0; display: none;" id="${calcId}_diffBox">
+                                    <div class="result-box-label" id="${calcId}_diffLabel">فرق عن الاستاندر</div>
+                                    <div class="result-box-value" id="${calcId}_diffVal">0 كجم</div>
                                 </div>
                             </div>`;
                     }
@@ -1580,7 +1594,7 @@
                             <div style="margin-top: 8px; border-top: 1px solid #e2e8f0; padding-top: 8px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; text-align: center;">
                                 <div><div style="font-size:0.8rem; color:#64748b;">فارغ الكرتونة</div><div style="font-weight:bold;">${m.cartonTare !== "" ? m.cartonTare : '-'}</div></div>
                                 <div><div style="font-size:0.8rem; color:#64748b;">فارغ الكيس</div><div style="font-weight:bold;">${m.bagTare !== "" ? m.bagTare : '-'}</div></div>
-                                <div><div style="font-size:0.8rem; color:#64748b;">وزن الوحدة</div><div style="font-weight:bold;">${m.unitWeight !== "" ? m.unitWeight : '-'}</div></div>
+                                <div><div style="font-size:0.8rem; color:#64748b;">وزن الوحدة (الاستاندر)</div><div style="font-weight:bold;">${m.unitWeight !== "" ? m.unitWeight : '-'}</div></div>
                             </div>
                             ${notesHtml}
                             ${calcBoxHtml}
@@ -1607,11 +1621,17 @@
         }
 
         function computeTareNet(calcId, cartonTare, bagTare) {
+            const unitsInput = document.getElementById(calcId + '_units');
+            const standardInput = document.getElementById(calcId + '_standard');
             const cartonsInput = document.getElementById(calcId + '_cartons');
             const bagsInput = document.getElementById(calcId + '_bags');
             const grossInput = document.getElementById(calcId + '_gross');
             const resultBox = document.getElementById(calcId + '_resultBox');
+            const resultLabel = document.getElementById(calcId + '_resultLabel');
             const resultVal = document.getElementById(calcId + '_resultVal');
+            const diffBox = document.getElementById(calcId + '_diffBox');
+            const diffLabel = document.getElementById(calcId + '_diffLabel');
+            const diffVal = document.getElementById(calcId + '_diffVal');
             if (!grossInput || !resultBox || !resultVal) return;
 
             const gross = parseFloat(grossInput.value);
@@ -1620,15 +1640,60 @@
 
             if (isNaN(gross) || gross <= 0) {
                 resultBox.style.display = 'none';
+                if (diffBox) diffBox.style.display = 'none';
                 return;
             }
 
             const totalTare = (cartonTare * cartons) + (bagTare * bags);
             const net = gross - totalTare;
 
-            resultVal.innerText = net.toFixed(3) + ' كجم';
-            resultBox.className = net >= 0 ? 'result-box green' : 'result-box red';
-            resultBox.style.display = 'block';
+            const units = unitsInput ? parseFloat(unitsInput.value) : NaN;
+            const standard = standardInput ? parseFloat(standardInput.value) : NaN;
+            const hasStandardCompare = !isNaN(units) && units > 0 && !isNaN(standard) && standard > 0;
+
+            if (!hasStandardCompare) {
+                // مفيش بيانات كافية للمقارنة بالاستاندر - نعرض الصافي فقط
+                resultLabel.innerText = 'الوزن الصافي';
+                resultVal.innerText = net.toFixed(3) + ' كجم';
+                resultBox.className = net >= 0 ? 'result-box green' : 'result-box red';
+                resultBox.style.display = 'block';
+                if (diffBox) diffBox.style.display = 'none';
+                return;
+            }
+
+            const totalStandard = standard * units;
+            const diff = net - totalStandard;
+
+            if (diff <= 0) {
+                // الصافي أقل من أو يساوي الاستاندر الكلي: يُعتمد الصافي كما هو، بدون تعويض
+                resultLabel.innerText = 'الوزن الفعلي المعتمد (الصافي)';
+                resultVal.innerText = net.toFixed(3) + ' كجم';
+                resultBox.className = 'result-box green';
+                resultBox.style.display = 'block';
+                if (diffBox) diffBox.style.display = 'none';
+            } else if (diff <= 0.050) {
+                // فرق بسيط لغاية 50 جرام: لا يُحسب تعويض، يُعتمد الاستاندر الكلي كوزن فعلي
+                resultLabel.innerText = 'الوزن الفعلي المعتمد (على الاستاندر)';
+                resultVal.innerText = totalStandard.toFixed(3) + ' كجم';
+                resultBox.className = 'result-box green';
+                resultBox.style.display = 'block';
+
+                diffLabel.innerText = 'فرق بسيط عن الاستاندر';
+                diffVal.innerText = (diff * 1000).toFixed(0) + ' جرام (لا يُحسب تعويض)';
+                diffBox.className = 'result-box blue';
+                diffBox.style.display = 'block';
+            } else {
+                // فرق أكبر من 50 جرام: يُعتمد الاستاندر الكلي كوزن فعلي، والفارق يُحسب تعويض
+                resultLabel.innerText = 'الوزن الفعلي المعتمد (على الاستاندر)';
+                resultVal.innerText = totalStandard.toFixed(3) + ' كجم';
+                resultBox.className = 'result-box green';
+                resultBox.style.display = 'block';
+
+                diffLabel.innerText = 'التعويض المستحق (الزيادة عن الاستاندر)';
+                diffVal.innerText = diff.toFixed(3) + ' كجم';
+                diffBox.className = 'result-box orange';
+                diffBox.style.display = 'block';
+            }
         }
 
         window.addEventListener('DOMContentLoaded', updateTaresDBStatus);
