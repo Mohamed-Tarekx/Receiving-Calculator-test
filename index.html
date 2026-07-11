@@ -1564,10 +1564,6 @@
                             <button class="add-sample-btn" style="margin-top: 10px; width: 100%;" onclick="toggleTareCalc('${calcId}')">🧮 حساب الصافي</button>
                             <div id="${calcId}_box" style="display: none; margin-top: 12px; background: #f8fafc; padding: 14px; border-radius: 10px; border: 1px dashed #cbd5e1;">
                                 <div class="form-group" style="margin-bottom: 10px;">
-                                    <label style="font-size: 0.85rem; margin-bottom: 5px;">عدد الوحدات (حسب المستلم من المورد)</label>
-                                    <input type="number" id="${calcId}_units" placeholder="مثال: 5" oninput="computeTareNet('${calcId}', ${cartonVal}, ${bagVal})">
-                                </div>
-                                <div class="form-group" style="margin-bottom: 10px;">
                                     <label style="font-size: 0.85rem; margin-bottom: 5px;">وزن الوحدة (الاستاندر) - قابل للتعديل</label>
                                     <input type="number" id="${calcId}_standard" value="${hasStandard ? standardDefault : ''}" placeholder="مثال: 1" oninput="computeTareNet('${calcId}', ${cartonVal}, ${bagVal})">
                                 </div>
@@ -1621,7 +1617,6 @@
         }
 
         function computeTareNet(calcId, cartonTare, bagTare) {
-            const unitsInput = document.getElementById(calcId + '_units');
             const standardInput = document.getElementById(calcId + '_standard');
             const cartonsInput = document.getElementById(calcId + '_cartons');
             const bagsInput = document.getElementById(calcId + '_bags');
@@ -1647,9 +1642,16 @@
             const totalTare = (cartonTare * cartons) + (bagTare * bags);
             const net = gross - totalTare;
 
-            const units = unitsInput ? parseFloat(unitsInput.value) : NaN;
+            // عدد الوحدات اللي يُضرب في الاستاندر: عدد الكراتين له الأولوية لو موجود، وإلا عدد الأكياس
+            let units = 0;
+            if (cartonsInput && cartons > 0) {
+                units = cartons;
+            } else if (bagsInput && bags > 0) {
+                units = bags;
+            }
+
             const standard = standardInput ? parseFloat(standardInput.value) : NaN;
-            const hasStandardCompare = !isNaN(units) && units > 0 && !isNaN(standard) && standard > 0;
+            const hasStandardCompare = units > 0 && !isNaN(standard) && standard > 0;
 
             if (!hasStandardCompare) {
                 // مفيش بيانات كافية للمقارنة بالاستاندر - نعرض الصافي فقط
