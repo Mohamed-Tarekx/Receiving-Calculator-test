@@ -1152,6 +1152,14 @@
         let currentDryMethod = 'sample'; 
         let currentFishType = 'morsi';
 
+        // دالة تقريب آمنة لأعلى رقم صحيح: تتفادى مشاكل دقة الأرقام العشرية في الجافا سكريبت
+        // (مثال: قيمة يفترض تكون 6.000 بالظبط قد تُخزن كـ 6.000000000000004 بسبب خطأ تقريب الأعداد العشرية،
+        // فيتم تقريبها خطأً إلى 7 بدل 6). نقرب الرقم لأقرب 3 خانات عشرية أولاً قبل تطبيق Math.ceil لضمان الدقة.
+        function safeCeil(value) {
+            const rounded = Math.round(value * 1000) / 1000;
+            return Math.ceil(rounded);
+        }
+
         // حماية الكود من الفحص واختصارات لوحة المفاتيح
         document.onkeydown = function(e) {
             if (e.keyCode == 123) { return false; } 
@@ -2277,7 +2285,7 @@
                     if (isDeficit) {
                         const numSamples = totalQty / 100;
                         const deficit = 100 - sampleW;
-                        comp = Math.ceil(deficit * numSamples);
+                        comp = safeCeil(deficit * numSamples);
                         actual = totalQty - comp;
                         document.getElementById('dryCompBox').style.display = 'block';
                     } else {
@@ -2300,7 +2308,7 @@
                     isDeficit = totalActualW < allowableW;
                     if (isDeficit) {
                         const deficit = totalQty - totalActualW; 
-                        comp = Math.ceil(deficit); 
+                        comp = safeCeil(deficit); 
                         actual = totalQty - comp;
                         document.getElementById('dryCompBox').style.display = 'block';
                     } else {
@@ -2325,7 +2333,7 @@
                 isDeficit = totalActualW < allowableW;
                 if (isDeficit) {
                     const deficit = totalQty - totalActualW;
-                    comp = Math.ceil(deficit); 
+                    comp = safeCeil(deficit); 
                     actual = totalQty - comp;
                     document.getElementById('dryCompBox').style.display = 'block';
                 } else {
