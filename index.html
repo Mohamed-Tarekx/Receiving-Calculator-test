@@ -106,6 +106,12 @@
             color: white;
         }
 
+        .home-btn.install-btn {
+            width: 34px;
+            height: 34px;
+            padding: 6px;
+        }
+
         .container {
             max-width: 480px;
             margin: 0 auto;
@@ -558,11 +564,29 @@
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><line x1="9" y1="22" x2="9" y2="16"></line><line x1="9" y1="16" x2="15" y2="16"></line><line x1="15" y1="16" x2="15" y2="22"></line><line x1="15" y1="2" x2="15" y2="6"></line><line x1="9" y1="2" x2="9" y2="6"></line><line x1="18" y1="6" x2="6" y2="6"></line></svg>
                 حاسبة الاستلام - فتح الله ماركت
             </div>
-            <button id="mainHomeBtn" class="home-btn" style="display: none;" onclick="goHome()">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-            </button>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <button id="installAppBtn" class="home-btn install-btn" style="display: none;" onclick="handleInstallClick()" title="تثبيت التطبيق">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                </button>
+                <button id="mainHomeBtn" class="home-btn" style="display: none;" onclick="goHome()">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                </button>
+            </div>
         </div>
     </header>
+
+    <!-- نافذة تعليمات التثبيت على الآيفون (لا يوجد API تلقائي على iOS Safari) -->
+    <div id="iosInstallModal" style="display:none; position:fixed; inset:0; background:rgba(17,24,39,0.85); z-index:2000; align-items:center; justify-content:center; padding:20px;">
+        <div style="background:#ffffff; border-radius:16px; padding:22px; max-width:340px; width:100%; text-align:center; box-shadow:0 20px 25px -5px rgba(0,0,0,0.3);">
+            <div style="font-size:1.05rem; font-weight:800; color:#111827; margin-bottom:14px;">📲 تثبيت التطبيق على الآيفون</div>
+            <div style="text-align:right; font-size:0.9rem; color:#334155; line-height:1.8; margin-bottom:16px;">
+                1. اضغط على زر <b>المشاركة</b> (Share) في متصفح Safari بالأسفل.<br>
+                2. مرر لتحت واختر <b>"إضافة إلى الشاشة الرئيسية"</b> (Add to Home Screen).<br>
+                3. اضغط <b>"إضافة"</b> أعلى الشاشة.
+            </div>
+            <button class="add-sample-btn" style="width:100%; padding:12px;" onclick="document.getElementById('iosInstallModal').style.display='none'">فهمت، إغلاق</button>
+        </div>
+    </div>
 
     <div class="container">
         <!-- Main Navigation Menu -->
@@ -1159,6 +1183,63 @@
             const rounded = Math.round(value * 1000) / 1000;
             return Math.ceil(rounded);
         }
+
+        // --- تثبيت التطبيق (Install App / Add to Home Screen) ---
+        let deferredInstallPrompt = null;
+
+        function isIOSDevice() {
+            return /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+                   (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        }
+
+        function isStandaloneMode() {
+            return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+        }
+
+        function updateInstallButtonVisibility() {
+            const btn = document.getElementById('installAppBtn');
+            if (!btn) return;
+            if (isStandaloneMode()) {
+                // البرنامج شغال بالفعل كتطبيق مثبت، فلا داعي لإظهار الزر
+                btn.style.display = 'none';
+                return;
+            }
+            if (isIOSDevice() || deferredInstallPrompt) {
+                btn.style.display = 'flex';
+            } else {
+                btn.style.display = 'none';
+            }
+        }
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredInstallPrompt = e;
+            updateInstallButtonVisibility();
+        });
+
+        window.addEventListener('appinstalled', () => {
+            deferredInstallPrompt = null;
+            updateInstallButtonVisibility();
+            showNotification('تم تثبيت التطبيق بنجاح! 🎉');
+        });
+
+        function handleInstallClick() {
+            if (isIOSDevice()) {
+                document.getElementById('iosInstallModal').style.display = 'flex';
+                return;
+            }
+            if (deferredInstallPrompt) {
+                deferredInstallPrompt.prompt();
+                deferredInstallPrompt.userChoice.finally(() => {
+                    deferredInstallPrompt = null;
+                    updateInstallButtonVisibility();
+                });
+            } else {
+                showNotification('التطبيق مثبت بالفعل أو غير مدعوم على هذا المتصفح.');
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', updateInstallButtonVisibility);
 
         // حماية الكود من الفحص واختصارات لوحة المفاتيح
         document.onkeydown = function(e) {
