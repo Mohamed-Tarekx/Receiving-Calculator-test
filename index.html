@@ -1316,12 +1316,12 @@
                     <div class="result-box-value" id="vacTotalNet">0.000 كجم</div>
                 </div>
                 <div class="result-box orange">
-                    <div class="result-box-label">إجمالي الاذن (خصم 2% على الأصناف المشمولة)</div>
-                    <div class="result-box-value" id="vacTotalAzn">0.000 كجم</div>
+                    <div class="result-box-label">إجمالي التقاطيع (خصم 2% على الأصناف المشمولة)</div>
+                    <div class="result-box-value" id="vacTotalTaqatee">0.000 كجم</div>
                 </div>
                 <div class="result-box green">
-                    <div class="result-box-label">إجمالي التقاطيع (الصافي بعد خصم الاذن)</div>
-                    <div class="result-box-value" id="vacTotalTaqatee">0.000 كجم</div>
+                    <div class="result-box-label">إجمالي الاذن (الصافي بعد خصم التقاطيع)</div>
+                    <div class="result-box-value" id="vacTotalAzn">0.000 كجم</div>
                 </div>
             </div>
 
@@ -1330,9 +1330,9 @@
                 <ol>
                     <li>لكل صنف: إجمالي وزن الفوارغ = (وزن السبت الثابت × عدد السبات) + (وزن الكيس الثابت × عدد القطعيات)، إلا لو تم تفعيل "بدون فاكيوم" فلا يُخصم وزن الأكياس.</li>
                     <li>صافي الوزن للصنف = الوزن الإجمالي القائم على الميزان - إجمالي وزن الفوارغ.</li>
-                    <li>الأصناف المشمولة بخصم "الاذن" (2%) فقط: صرة، دوش، سن، وش فخدة، سمانة، رقبة، ضهر، فلتو، روزبيف، كولاطة، موزة، كتف، روستو، عكاوي. باقي الأصناف (كبدة، قلب، كلاوي، كرشة، لحم راس، فشة، مفاريم، ممبار) بدون خصم اذن.</li>
-                    <li>الاذن = صافي الوزن × 2% (للأصناف المشمولة فقط).</li>
-                    <li>التقاطيع = صافي الوزن - الاذن (للأصناف المشمولة)، أو = صافي الوزن مباشرة (للأصناف غير المشمولة بالاذن).</li>
+                    <li>الأصناف المشمولة بخصم "التقاطيع" (2%) فقط: صرة، دوش، سن، وش فخدة، سمانة، رقبة، ضهر، فلتو، روزبيف، كولاطة، موزة، كتف، روستو، عكاوي. باقي الأصناف (كبدة، قلب، كلاوي، كرشة، لحم راس، فشة، مفاريم، ممبار) بدون خصم تقاطيع.</li>
+                    <li>التقاطيع = صافي الوزن × 2% (للأصناف المشمولة فقط).</li>
+                    <li>الاذن = صافي الوزن - التقاطيع (للأصناف المشمولة)، أو = صافي الوزن مباشرة (للأصناف غير المشمولة بالتقاطيع).</li>
                     <li>الإجماليات الكلية للشحنة = مجموع كل الأصناف المضافة فعلياً.</li>
                 </ol>
             </div>
@@ -2038,7 +2038,7 @@
         window.addEventListener('DOMContentLoaded', updateTaresDBStatus);
 
         // --- VACUUM MEAT DEDUCTION MODULE (تخصيم اللحمة الفاكيوم) ---
-        // قاعدة بيانات الأصناف الثابتة: وزن السبت، وزن الكيس، وهل يُطبق عليه خصم "الاذن" 2%
+        // قاعدة بيانات الأصناف الثابتة: وزن السبت، وزن الكيس، وهل يُطبق عليه خصم "التقاطيع" 2%
         const VACUUM_ITEMS_DB = [
             { name: 'صره', basketWeight: 1.35, bagWeight: 0.06, hasAzn: true },
             { name: 'دوش', basketWeight: 1.35, bagWeight: 0.06, hasAzn: true },
@@ -2090,15 +2090,66 @@
             if (isNaN(dbIndex)) return;
             const id = 'vacItem' + (vacuumItemCounter++);
             vacuumAddedItems.push({ id, dbIndex });
-            renderVacuumItems();
+
+            const list = document.getElementById('vacuumItemsList');
+            const wrapper = document.createElement('div');
+            wrapper.innerHTML = buildVacuumItemCardHtml({ id, dbIndex });
+            list.appendChild(wrapper.firstElementChild);
+
             populateVacuumItemSelect();
             select.value = '';
+            updateVacuumTotals();
         }
 
         function removeVacuumItem(id) {
             vacuumAddedItems = vacuumAddedItems.filter(a => a.id !== id);
-            renderVacuumItems();
+            const card = document.getElementById(id + '_card');
+            if (card) card.remove();
             populateVacuumItemSelect();
+            updateVacuumTotals();
+        }
+
+        function buildVacuumItemCardHtml(entry) {
+            const item = VACUUM_ITEMS_DB[entry.dbIndex];
+            return `
+                <div class="vac-item-card" id="${entry.id}_card">
+                    <div class="vac-item-header">
+                        <span class="vac-item-name">${item.name}</span>
+                        <button class="vac-remove-btn" onclick="removeVacuumItem('${entry.id}')">🗑 إزالة</button>
+                    </div>
+                    <div class="vac-toggle-row">
+                        <span class="vac-toggle-label">بدون فاكيوم (بدون خصم وزن الأكياس)</span>
+                        <label class="vac-switch">
+                            <input type="checkbox" id="${entry.id}_noVacuum" onchange="calculateVacuumItem('${entry.id}')">
+                            <span class="vac-switch-slider"></span>
+                        </label>
+                    </div>
+                    <div class="vac-item-grid">
+                        <div class="form-group">
+                            <label style="font-size:0.85rem;">عدد السبات</label>
+                            <input type="number" id="${entry.id}_baskets" placeholder="مثال: 5" oninput="calculateVacuumItem('${entry.id}')">
+                        </div>
+                        <div class="form-group">
+                            <label style="font-size:0.85rem;">عدد القطعيات (أكياس)</label>
+                            <input type="number" id="${entry.id}_bags" placeholder="مثال: 10" oninput="calculateVacuumItem('${entry.id}')">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label style="font-size:0.85rem;">الوزن الإجمالي القائم على الميزان (كجم)</label>
+                        <input type="number" id="${entry.id}_gross" placeholder="مثال: 70.1" oninput="calculateVacuumItem('${entry.id}')">
+                    </div>
+                    <div class="vac-item-result" id="${entry.id}_resultGrid" style="display:none;">
+                        <div class="result-box blue" style="margin-bottom:0;">
+                            <div class="result-box-label">صافي الوزن</div>
+                            <div class="result-box-value" id="${entry.id}_net" style="font-size:1.1rem;">0.000 كجم</div>
+                        </div>
+                        <div class="result-box green" style="margin-bottom:0;" id="${entry.id}_finalBox">
+                            <div class="result-box-label" id="${entry.id}_finalLabel">الاذن</div>
+                            <div class="result-box-value" id="${entry.id}_final" style="font-size:1.1rem;">0.000 كجم</div>
+                        </div>
+                    </div>
+                </div>
+            `;
         }
 
         function renderVacuumItems() {
@@ -2112,46 +2163,7 @@
             }
             let html = '';
             vacuumAddedItems.forEach(entry => {
-                const item = VACUUM_ITEMS_DB[entry.dbIndex];
-                html += `
-                    <div class="vac-item-card" id="${entry.id}_card">
-                        <div class="vac-item-header">
-                            <span class="vac-item-name">${item.name}</span>
-                            <button class="vac-remove-btn" onclick="removeVacuumItem('${entry.id}')">🗑 إزالة</button>
-                        </div>
-                        <div class="vac-toggle-row">
-                            <span class="vac-toggle-label">بدون فاكيوم (بدون خصم وزن الأكياس)</span>
-                            <label class="vac-switch">
-                                <input type="checkbox" id="${entry.id}_noVacuum" onchange="calculateVacuumItem('${entry.id}')">
-                                <span class="vac-switch-slider"></span>
-                            </label>
-                        </div>
-                        <div class="vac-item-grid">
-                            <div class="form-group">
-                                <label style="font-size:0.85rem;">عدد السبات</label>
-                                <input type="number" id="${entry.id}_baskets" placeholder="مثال: 5" oninput="calculateVacuumItem('${entry.id}')">
-                            </div>
-                            <div class="form-group">
-                                <label style="font-size:0.85rem;">عدد القطعيات (أكياس)</label>
-                                <input type="number" id="${entry.id}_bags" placeholder="مثال: 10" oninput="calculateVacuumItem('${entry.id}')">
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label style="font-size:0.85rem;">الوزن الإجمالي القائم على الميزان (كجم)</label>
-                            <input type="number" id="${entry.id}_gross" placeholder="مثال: 70.1" oninput="calculateVacuumItem('${entry.id}')">
-                        </div>
-                        <div class="vac-item-result" id="${entry.id}_resultGrid" style="display:none;">
-                            <div class="result-box blue" style="margin-bottom:0;">
-                                <div class="result-box-label">صافي الوزن</div>
-                                <div class="result-box-value" id="${entry.id}_net" style="font-size:1.1rem;">0.000 كجم</div>
-                            </div>
-                            <div class="result-box green" style="margin-bottom:0;" id="${entry.id}_finalBox">
-                                <div class="result-box-label" id="${entry.id}_finalLabel">التقاطيع</div>
-                                <div class="result-box-value" id="${entry.id}_final" style="font-size:1.1rem;">0.000 كجم</div>
-                            </div>
-                        </div>
-                    </div>
-                `;
+                html += buildVacuumItemCardHtml(entry);
             });
             list.innerHTML = html;
             // إعادة حساب كل الأصناف المضافة (لو كانت فيها بيانات قبل كده)
@@ -2191,20 +2203,20 @@
             const totalTare = basketTareTotal + bagTareTotal;
             const net = gross - totalTare;
 
-            let azn = 0;
-            let final = net;
+            let taqatee = 0;
+            let azn = net;
             if (item.hasAzn) {
-                azn = net * 0.02;
-                final = net - azn;
-                finalLabel.innerText = 'التقاطيع (بعد خصم الاذن)';
+                taqatee = net * 0.02;
+                azn = net - taqatee;
+                finalLabel.innerText = 'الاذن (بعد خصم التقاطيع)';
             } else {
-                azn = 0;
-                final = net;
-                finalLabel.innerText = 'التقاطيع (بدون اذن)';
+                taqatee = 0;
+                azn = net;
+                finalLabel.innerText = 'الاذن (بدون تقاطيع)';
             }
 
             netEl.innerText = net.toFixed(3) + ' كجم';
-            finalEl.innerText = final.toFixed(3) + ' كجم';
+            finalEl.innerText = azn.toFixed(3) + ' كجم';
             resultGrid.style.display = 'grid';
 
             if (updateTotals) updateVacuumTotals();
@@ -2244,8 +2256,8 @@
                 const bagTareTotal = noVacuum ? 0 : (item.bagWeight * bags);
                 const tare = basketTareTotal + bagTareTotal;
                 const net = gross - tare;
-                const azn = item.hasAzn ? (net * 0.02) : 0;
-                const taqatee = net - azn;
+                const taqatee = item.hasAzn ? (net * 0.02) : 0;
+                const azn = net - taqatee;
 
                 totalTare += tare;
                 totalGross += gross;
@@ -2282,9 +2294,9 @@
                     <ol>
                         <li>لكل صنف: إجمالي وزن الفوارغ = (وزن السبت الثابت × عدد السبات) + (وزن الكيس الثابت × عدد القطعيات)، إلا لو تم تفعيل "بدون فاكيوم" فلا يُخصم وزن الأكياس.</li>
                         <li>صافي الوزن للصنف = الوزن الإجمالي القائم على الميزان - إجمالي وزن الفوارغ.</li>
-                        <li>الأصناف المشمولة بخصم "الاذن" (2%) فقط: صرة، دوش، سن، وش فخدة، سمانة، رقبة، ضهر، فلتو، روزبيف، كولاطة، موزة، كتف، روستو، عكاوي. باقي الأصناف بدون خصم اذن.</li>
-                        <li>الاذن = صافي الوزن × 2% (للأصناف المشمولة فقط).</li>
-                        <li>التقاطيع = صافي الوزن - الاذن (للأصناف المشمولة)، أو = صافي الوزن مباشرة (للأصناف غير المشمولة بالاذن).</li>
+                        <li>الأصناف المشمولة بخصم "التقاطيع" (2%) فقط: صرة، دوش، سن، وش فخدة، سمانة، رقبة، ضهر، فلتو، روزبيف، كولاطة، موزة، كتف، روستو، عكاوي. باقي الأصناف بدون خصم تقاطيع.</li>
+                        <li>التقاطيع = صافي الوزن × 2% (للأصناف المشمولة فقط).</li>
+                        <li>الاذن = صافي الوزن - التقاطيع (للأصناف المشمولة)، أو = صافي الوزن مباشرة (للأصناف غير المشمولة بالتقاطيع).</li>
                         <li>الإجماليات الكلية للشحنة = مجموع كل الأصناف المضافة فعلياً.</li>
                     </ol>
                 `;
@@ -2298,14 +2310,14 @@
                 html += `إجمالي الفوارغ = <code>${it.tare.toFixed(3)}</code> كجم (سبات: <code>${it.baskets}</code> × وزن السبت، ${it.noVacuum ? 'مفيش خصم أكياس' : `أكياس: <code>${it.bags}</code> × وزن الكيس`}).<br>`;
                 html += `صافي الوزن = <code>${it.gross.toFixed(3)}</code> - <code>${it.tare.toFixed(3)}</code> = <b><code>${it.net.toFixed(3)}</code> كجم</b>.<br>`;
                 if (it.hasAzn) {
-                    html += `الاذن (2%) = <code>${it.net.toFixed(3)}</code> × 2% = <code>${it.azn.toFixed(3)}</code> كجم.<br>`;
-                    html += `التقاطيع = <code>${it.net.toFixed(3)}</code> - <code>${it.azn.toFixed(3)}</code> = <b><code>${it.taqatee.toFixed(3)}</code> كجم</b>.`;
+                    html += `التقاطيع (2%) = <code>${it.net.toFixed(3)}</code> × 2% = <code>${it.taqatee.toFixed(3)}</code> كجم.<br>`;
+                    html += `الاذن = <code>${it.net.toFixed(3)}</code> - <code>${it.taqatee.toFixed(3)}</code> = <b><code>${it.azn.toFixed(3)}</code> كجم</b>.`;
                 } else {
-                    html += `هذا الصنف غير مشمول بخصم الاذن، فالتقاطيع = الصافي مباشرة = <b><code>${it.taqatee.toFixed(3)}</code> كجم</b>.`;
+                    html += `هذا الصنف غير مشمول بخصم التقاطيع، فالاذن = الصافي مباشرة = <b><code>${it.azn.toFixed(3)}</code> كجم</b>.`;
                 }
                 html += `</li>`;
             });
-            html += `<li><b>الإجمالي الكلي للشحنة:</b><br>إجمالي الفوارغ = <code>${totalTare.toFixed(3)}</code> كجم | إجمالي الوزن القائم = <code>${totalGross.toFixed(3)}</code> كجم | إجمالي الصافي = <b><code>${totalNet.toFixed(3)}</code> كجم</b> | إجمالي الاذن = <code>${totalAzn.toFixed(3)}</code> كجم | <b>إجمالي التقاطيع النهائي = <code>${totalTaqatee.toFixed(3)}</code> كجم</b>.</li>`;
+            html += `<li><b>الإجمالي الكلي للشحنة:</b><br>إجمالي الفوارغ = <code>${totalTare.toFixed(3)}</code> كجم | إجمالي الوزن القائم = <code>${totalGross.toFixed(3)}</code> كجم | إجمالي الصافي = <b><code>${totalNet.toFixed(3)}</code> كجم</b> | إجمالي التقاطيع = <code>${totalTaqatee.toFixed(3)}</code> كجم | <b>إجمالي الاذن النهائي = <code>${totalAzn.toFixed(3)}</code> كجم</b>.</li>`;
             html += `</ol>`;
             box.innerHTML = html;
         }
