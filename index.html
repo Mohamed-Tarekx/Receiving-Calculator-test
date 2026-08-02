@@ -550,6 +550,117 @@
             transform: translateX(-50%) translateY(0);
         }
 
+        /* Vacuum Meat Deduction Module Styles */
+        .vac-item-card {
+            background-color: var(--bg-card);
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 16px;
+            margin-bottom: 14px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        .vac-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .vac-item-name {
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: var(--dark-header);
+        }
+
+        .vac-remove-btn {
+            background: var(--danger-bg);
+            color: var(--danger);
+            border: 1px solid var(--danger-border);
+            border-radius: 8px;
+            padding: 6px 10px;
+            font-weight: bold;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+
+        .vac-toggle-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #f8fafc;
+            border: 1px dashed #cbd5e1;
+            border-radius: 8px;
+            padding: 10px 12px;
+            margin-bottom: 12px;
+        }
+
+        .vac-toggle-label {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #475569;
+        }
+
+        .vac-switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+            flex-shrink: 0;
+        }
+
+        .vac-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .vac-switch-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #cbd5e1;
+            border-radius: 24px;
+            transition: 0.2s;
+        }
+
+        .vac-switch-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            border-radius: 50%;
+            transition: 0.2s;
+        }
+
+        .vac-switch input:checked + .vac-switch-slider {
+            background-color: var(--primary);
+        }
+
+        .vac-switch input:checked + .vac-switch-slider:before {
+            transform: translateX(-20px);
+        }
+
+        .vac-item-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .vac-item-grid .form-group {
+            margin-bottom: 10px;
+        }
+
+        .vac-item-result {
+            margin-top: 10px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
         @keyframes slideUp {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
@@ -636,6 +747,10 @@
                 </button>
                 <button class="menu-card" onclick="openModule('tares')">
                     <span class="card-title">فوارغ الموازين</span>
+                    <span class="arrow-left">&#10094;</span>
+                </button>
+                <button class="menu-card" onclick="openModule('vacuum')">
+                    <span class="card-title">تخصيم اللحمة الفاكيوم</span>
                     <span class="arrow-left">&#10094;</span>
                 </button>
             </div>
@@ -1166,7 +1281,63 @@
                 <div id="taresResultContent"></div>
             </div>
         </div>
-    </div>
+
+        <!-- MODULE: Vacuum Meat Deduction (تخصيم اللحمة الفاكيوم) -->
+        <div id="vacuumView" class="module-view">
+            <div class="module-header">
+                <button class="back-btn" onclick="goHome()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
+                <span class="module-title">تخصيم اللحمة الفاكيوم</span>
+            </div>
+            <div class="info-box">
+                اختر الأصناف اللي جت فعلاً بالشحنة، وأدخل عدد السبات وعدد القطعيات (أكياس الفاكيوم) والوزن الإجمالي القائم على الميزان لكل صنف. لو الصنف جه بدون فاكيوم، فعّل خيار "بدون فاكيوم" فيه فيتم تجاهل خصم وزن الأكياس له.
+            </div>
+
+            <div class="form-group">
+                <label>➕ إضافة صنف</label>
+                <select id="vacuumItemSelect" onchange="addVacuumItem()">
+                    <option value="">-- اختر الصنف لإضافته --</option>
+                </select>
+            </div>
+
+            <div id="vacuumItemsList"></div>
+
+            <div class="results-section" id="vacuumTotalsSection" style="display: none;">
+                <h3 class="results-title">الإجمالي الكلي للشحنة:</h3>
+                <div class="result-box blue">
+                    <div class="result-box-label">إجمالي وزن الفوارغ (سبات + أكياس)</div>
+                    <div class="result-box-value" id="vacTotalTare">0.000 كجم</div>
+                </div>
+                <div class="result-box blue">
+                    <div class="result-box-label">إجمالي الوزن القائم على الميزان</div>
+                    <div class="result-box-value" id="vacTotalGross">0.000 كجم</div>
+                </div>
+                <div class="result-box green">
+                    <div class="result-box-label">إجمالي صافي الوزن</div>
+                    <div class="result-box-value" id="vacTotalNet">0.000 كجم</div>
+                </div>
+                <div class="result-box orange">
+                    <div class="result-box-label">إجمالي الاذن (خصم 2% على الأصناف المشمولة)</div>
+                    <div class="result-box-value" id="vacTotalAzn">0.000 كجم</div>
+                </div>
+                <div class="result-box green">
+                    <div class="result-box-label">إجمالي التقاطيع (الصافي بعد خصم الاذن)</div>
+                    <div class="result-box-value" id="vacTotalTaqatee">0.000 كجم</div>
+                </div>
+            </div>
+
+            <div class="steps-box" id="vacuumStepsBox">
+                <h4>💡 طريقة ومراحل الحساب:</h4>
+                <ol>
+                    <li>لكل صنف: إجمالي وزن الفوارغ = (وزن السبت الثابت × عدد السبات) + (وزن الكيس الثابت × عدد القطعيات)، إلا لو تم تفعيل "بدون فاكيوم" فلا يُخصم وزن الأكياس.</li>
+                    <li>صافي الوزن للصنف = الوزن الإجمالي القائم على الميزان - إجمالي وزن الفوارغ.</li>
+                    <li>الأصناف المشمولة بخصم "الاذن" (2%) فقط: صرة، دوش، سن، وش فخدة، سمانة، رقبة، ضهر، فلتو، روزبيف، كولاطة، موزة، كتف، روستو، عكاوي. باقي الأصناف (كبدة، قلب، كلاوي، كرشة، لحم راس، فشة، مفاريم، ممبار) بدون خصم اذن.</li>
+                    <li>الاذن = صافي الوزن × 2% (للأصناف المشمولة فقط).</li>
+                    <li>التقاطيع = صافي الوزن - الاذن (للأصناف المشمولة)، أو = صافي الوزن مباشرة (للأصناف غير المشمولة بالاذن).</li>
+                    <li>الإجماليات الكلية للشحنة = مجموع كل الأصناف المضافة فعلياً.</li>
+                </ol>
+            </div>
+        </div>
+        </div>
 
     <!-- Notification Toast system -->
     <div id="appToast" class="app-toast"></div>
@@ -1865,6 +2036,281 @@
         }
 
         window.addEventListener('DOMContentLoaded', updateTaresDBStatus);
+
+        // --- VACUUM MEAT DEDUCTION MODULE (تخصيم اللحمة الفاكيوم) ---
+        // قاعدة بيانات الأصناف الثابتة: وزن السبت، وزن الكيس، وهل يُطبق عليه خصم "الاذن" 2%
+        const VACUUM_ITEMS_DB = [
+            { name: 'صره', basketWeight: 1.35, bagWeight: 0.06, hasAzn: true },
+            { name: 'دوش', basketWeight: 1.35, bagWeight: 0.06, hasAzn: true },
+            { name: 'سن', basketWeight: 1.35, bagWeight: 0.06, hasAzn: true },
+            { name: 'وش فخدة', basketWeight: 1.35, bagWeight: 0.06, hasAzn: true },
+            { name: 'سمانه', basketWeight: 1.35, bagWeight: 0.03, hasAzn: true },
+            { name: 'رقبه', basketWeight: 1.35, bagWeight: 0.06, hasAzn: true },
+            { name: 'ضهر', basketWeight: 1.35, bagWeight: 0.06, hasAzn: true },
+            { name: 'فلتو', basketWeight: 1.35, bagWeight: 0.035, hasAzn: true },
+            { name: 'روزبيف', basketWeight: 1.35, bagWeight: 0.03, hasAzn: true },
+            { name: 'كولاطه', basketWeight: 1.35, bagWeight: 0.03, hasAzn: true },
+            { name: 'موزه', basketWeight: 1.35, bagWeight: 0.03, hasAzn: true },
+            { name: 'كتف', basketWeight: 1.35, bagWeight: 0.06, hasAzn: true },
+            { name: 'روستو', basketWeight: 1.35, bagWeight: 0.025, hasAzn: true },
+            { name: 'عكاوي', basketWeight: 1.35, bagWeight: 0.035, hasAzn: true },
+            { name: 'كبده بقري', basketWeight: 1.35, bagWeight: 0.05, hasAzn: false },
+            { name: 'قلب بقري', basketWeight: 1.35, bagWeight: 0.05, hasAzn: false },
+            { name: 'كلاوي بقري', basketWeight: 1.35, bagWeight: 0, hasAzn: false },
+            { name: 'كبده بقري2', basketWeight: 1.35, bagWeight: 0, hasAzn: false },
+            { name: 'قلب بقري 2', basketWeight: 1.35, bagWeight: 0, hasAzn: false },
+            { name: 'كلاوي برازيلي', basketWeight: 1.35, bagWeight: 0, hasAzn: false },
+            { name: 'كرشة', basketWeight: 1.35, bagWeight: 0.08, hasAzn: false },
+            { name: 'لحم راس', basketWeight: 1.35, bagWeight: 0.08, hasAzn: false },
+            { name: 'فشة', basketWeight: 1.35, bagWeight: 0.08, hasAzn: false },
+            { name: 'مفاريم gb', basketWeight: 1.35, bagWeight: 0.05, hasAzn: false },
+            { name: 'ممبار', basketWeight: 1.35, bagWeight: 0.3, hasAzn: false }
+        ];
+
+        let vacuumAddedItems = []; // { id, dbIndex }
+        let vacuumItemCounter = 0;
+
+        function populateVacuumItemSelect() {
+            const select = document.getElementById('vacuumItemSelect');
+            if (!select) return;
+            select.innerHTML = '<option value="">-- اختر الصنف لإضافته --</option>';
+            VACUUM_ITEMS_DB.forEach((item, idx) => {
+                const alreadyAdded = vacuumAddedItems.some(a => a.dbIndex === idx);
+                if (alreadyAdded) return;
+                const opt = document.createElement('option');
+                opt.value = idx;
+                opt.innerText = item.name;
+                select.appendChild(opt);
+            });
+        }
+
+        function addVacuumItem() {
+            const select = document.getElementById('vacuumItemSelect');
+            const dbIndex = parseInt(select.value);
+            if (isNaN(dbIndex)) return;
+            const id = 'vacItem' + (vacuumItemCounter++);
+            vacuumAddedItems.push({ id, dbIndex });
+            renderVacuumItems();
+            populateVacuumItemSelect();
+            select.value = '';
+        }
+
+        function removeVacuumItem(id) {
+            vacuumAddedItems = vacuumAddedItems.filter(a => a.id !== id);
+            renderVacuumItems();
+            populateVacuumItemSelect();
+        }
+
+        function renderVacuumItems() {
+            const list = document.getElementById('vacuumItemsList');
+            if (!list) return;
+            if (vacuumAddedItems.length === 0) {
+                list.innerHTML = '';
+                document.getElementById('vacuumTotalsSection').style.display = 'none';
+                updateVacuumSteps();
+                return;
+            }
+            let html = '';
+            vacuumAddedItems.forEach(entry => {
+                const item = VACUUM_ITEMS_DB[entry.dbIndex];
+                html += `
+                    <div class="vac-item-card" id="${entry.id}_card">
+                        <div class="vac-item-header">
+                            <span class="vac-item-name">${item.name}</span>
+                            <button class="vac-remove-btn" onclick="removeVacuumItem('${entry.id}')">🗑 إزالة</button>
+                        </div>
+                        <div class="vac-toggle-row">
+                            <span class="vac-toggle-label">بدون فاكيوم (بدون خصم وزن الأكياس)</span>
+                            <label class="vac-switch">
+                                <input type="checkbox" id="${entry.id}_noVacuum" onchange="calculateVacuumItem('${entry.id}')">
+                                <span class="vac-switch-slider"></span>
+                            </label>
+                        </div>
+                        <div class="vac-item-grid">
+                            <div class="form-group">
+                                <label style="font-size:0.85rem;">عدد السبات</label>
+                                <input type="number" id="${entry.id}_baskets" placeholder="مثال: 5" oninput="calculateVacuumItem('${entry.id}')">
+                            </div>
+                            <div class="form-group">
+                                <label style="font-size:0.85rem;">عدد القطعيات (أكياس)</label>
+                                <input type="number" id="${entry.id}_bags" placeholder="مثال: 10" oninput="calculateVacuumItem('${entry.id}')">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label style="font-size:0.85rem;">الوزن الإجمالي القائم على الميزان (كجم)</label>
+                            <input type="number" id="${entry.id}_gross" placeholder="مثال: 70.1" oninput="calculateVacuumItem('${entry.id}')">
+                        </div>
+                        <div class="vac-item-result" id="${entry.id}_resultGrid" style="display:none;">
+                            <div class="result-box blue" style="margin-bottom:0;">
+                                <div class="result-box-label">صافي الوزن</div>
+                                <div class="result-box-value" id="${entry.id}_net" style="font-size:1.1rem;">0.000 كجم</div>
+                            </div>
+                            <div class="result-box green" style="margin-bottom:0;" id="${entry.id}_finalBox">
+                                <div class="result-box-label" id="${entry.id}_finalLabel">التقاطيع</div>
+                                <div class="result-box-value" id="${entry.id}_final" style="font-size:1.1rem;">0.000 كجم</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            list.innerHTML = html;
+            // إعادة حساب كل الأصناف المضافة (لو كانت فيها بيانات قبل كده)
+            vacuumAddedItems.forEach(entry => calculateVacuumItem(entry.id, false));
+            updateVacuumTotals();
+        }
+
+        function calculateVacuumItem(id, updateTotals = true) {
+            const entry = vacuumAddedItems.find(a => a.id === id);
+            if (!entry) return;
+            const item = VACUUM_ITEMS_DB[entry.dbIndex];
+
+            const basketsInput = document.getElementById(id + '_baskets');
+            const bagsInput = document.getElementById(id + '_bags');
+            const grossInput = document.getElementById(id + '_gross');
+            const noVacuumInput = document.getElementById(id + '_noVacuum');
+            const resultGrid = document.getElementById(id + '_resultGrid');
+            const netEl = document.getElementById(id + '_net');
+            const finalBox = document.getElementById(id + '_finalBox');
+            const finalLabel = document.getElementById(id + '_finalLabel');
+            const finalEl = document.getElementById(id + '_final');
+            if (!grossInput) return;
+
+            const baskets = parseFloat(basketsInput.value) || 0;
+            const bags = parseFloat(bagsInput.value) || 0;
+            const gross = parseFloat(grossInput.value);
+            const noVacuum = noVacuumInput ? noVacuumInput.checked : false;
+
+            if (isNaN(gross) || gross <= 0) {
+                resultGrid.style.display = 'none';
+                if (updateTotals) updateVacuumTotals();
+                return;
+            }
+
+            const basketTareTotal = item.basketWeight * baskets;
+            const bagTareTotal = noVacuum ? 0 : (item.bagWeight * bags);
+            const totalTare = basketTareTotal + bagTareTotal;
+            const net = gross - totalTare;
+
+            let azn = 0;
+            let final = net;
+            if (item.hasAzn) {
+                azn = net * 0.02;
+                final = net - azn;
+                finalLabel.innerText = 'التقاطيع (بعد خصم الاذن)';
+            } else {
+                azn = 0;
+                final = net;
+                finalLabel.innerText = 'التقاطيع (بدون اذن)';
+            }
+
+            netEl.innerText = net.toFixed(3) + ' كجم';
+            finalEl.innerText = final.toFixed(3) + ' كجم';
+            resultGrid.style.display = 'grid';
+
+            if (updateTotals) updateVacuumTotals();
+        }
+
+        function updateVacuumTotals() {
+            const totalsSection = document.getElementById('vacuumTotalsSection');
+            if (!totalsSection) return;
+
+            if (vacuumAddedItems.length === 0) {
+                totalsSection.style.display = 'none';
+                updateVacuumSteps();
+                return;
+            }
+
+            let totalTare = 0, totalGross = 0, totalNet = 0, totalAzn = 0, totalTaqatee = 0;
+            let anyValid = false;
+            const itemBreakdown = [];
+
+            vacuumAddedItems.forEach(entry => {
+                const item = VACUUM_ITEMS_DB[entry.dbIndex];
+                const basketsInput = document.getElementById(entry.id + '_baskets');
+                const bagsInput = document.getElementById(entry.id + '_bags');
+                const grossInput = document.getElementById(entry.id + '_gross');
+                const noVacuumInput = document.getElementById(entry.id + '_noVacuum');
+                if (!grossInput) return;
+
+                const baskets = parseFloat(basketsInput.value) || 0;
+                const bags = parseFloat(bagsInput.value) || 0;
+                const gross = parseFloat(grossInput.value);
+                const noVacuum = noVacuumInput ? noVacuumInput.checked : false;
+
+                if (isNaN(gross) || gross <= 0) return;
+                anyValid = true;
+
+                const basketTareTotal = item.basketWeight * baskets;
+                const bagTareTotal = noVacuum ? 0 : (item.bagWeight * bags);
+                const tare = basketTareTotal + bagTareTotal;
+                const net = gross - tare;
+                const azn = item.hasAzn ? (net * 0.02) : 0;
+                const taqatee = net - azn;
+
+                totalTare += tare;
+                totalGross += gross;
+                totalNet += net;
+                totalAzn += azn;
+                totalTaqatee += taqatee;
+
+                itemBreakdown.push({ name: item.name, baskets, bags, gross, tare, net, azn, taqatee, hasAzn: item.hasAzn, noVacuum });
+            });
+
+            if (!anyValid) {
+                totalsSection.style.display = 'none';
+                updateVacuumSteps();
+                return;
+            }
+
+            document.getElementById('vacTotalTare').innerText = totalTare.toFixed(3) + ' كجم';
+            document.getElementById('vacTotalGross').innerText = totalGross.toFixed(3) + ' كجم';
+            document.getElementById('vacTotalNet').innerText = totalNet.toFixed(3) + ' كجم';
+            document.getElementById('vacTotalAzn').innerText = totalAzn.toFixed(3) + ' كجم';
+            document.getElementById('vacTotalTaqatee').innerText = totalTaqatee.toFixed(3) + ' كجم';
+            totalsSection.style.display = 'block';
+
+            updateVacuumSteps(itemBreakdown, totalTare, totalGross, totalNet, totalAzn, totalTaqatee);
+        }
+
+        function updateVacuumSteps(itemBreakdown, totalTare, totalGross, totalNet, totalAzn, totalTaqatee) {
+            const box = document.getElementById('vacuumStepsBox');
+            if (!box) return;
+
+            if (!itemBreakdown || itemBreakdown.length === 0) {
+                box.innerHTML = `
+                    <h4>💡 طريقة ومراحل الحساب:</h4>
+                    <ol>
+                        <li>لكل صنف: إجمالي وزن الفوارغ = (وزن السبت الثابت × عدد السبات) + (وزن الكيس الثابت × عدد القطعيات)، إلا لو تم تفعيل "بدون فاكيوم" فلا يُخصم وزن الأكياس.</li>
+                        <li>صافي الوزن للصنف = الوزن الإجمالي القائم على الميزان - إجمالي وزن الفوارغ.</li>
+                        <li>الأصناف المشمولة بخصم "الاذن" (2%) فقط: صرة، دوش، سن، وش فخدة، سمانة، رقبة، ضهر، فلتو، روزبيف، كولاطة، موزة، كتف، روستو، عكاوي. باقي الأصناف بدون خصم اذن.</li>
+                        <li>الاذن = صافي الوزن × 2% (للأصناف المشمولة فقط).</li>
+                        <li>التقاطيع = صافي الوزن - الاذن (للأصناف المشمولة)، أو = صافي الوزن مباشرة (للأصناف غير المشمولة بالاذن).</li>
+                        <li>الإجماليات الكلية للشحنة = مجموع كل الأصناف المضافة فعلياً.</li>
+                    </ol>
+                `;
+                return;
+            }
+
+            let html = `<h4>💡 خطوات الحل الحسابية بالتفصيل:</h4><ol>`;
+            itemBreakdown.forEach(it => {
+                const vacuumNote = it.noVacuum ? ' (بدون فاكيوم - لا يُخصم وزن الأكياس)' : '';
+                html += `<li><b>صنف: ${it.name}${vacuumNote}</b><br>`;
+                html += `إجمالي الفوارغ = <code>${it.tare.toFixed(3)}</code> كجم (سبات: <code>${it.baskets}</code> × وزن السبت، ${it.noVacuum ? 'مفيش خصم أكياس' : `أكياس: <code>${it.bags}</code> × وزن الكيس`}).<br>`;
+                html += `صافي الوزن = <code>${it.gross.toFixed(3)}</code> - <code>${it.tare.toFixed(3)}</code> = <b><code>${it.net.toFixed(3)}</code> كجم</b>.<br>`;
+                if (it.hasAzn) {
+                    html += `الاذن (2%) = <code>${it.net.toFixed(3)}</code> × 2% = <code>${it.azn.toFixed(3)}</code> كجم.<br>`;
+                    html += `التقاطيع = <code>${it.net.toFixed(3)}</code> - <code>${it.azn.toFixed(3)}</code> = <b><code>${it.taqatee.toFixed(3)}</code> كجم</b>.`;
+                } else {
+                    html += `هذا الصنف غير مشمول بخصم الاذن، فالتقاطيع = الصافي مباشرة = <b><code>${it.taqatee.toFixed(3)}</code> كجم</b>.`;
+                }
+                html += `</li>`;
+            });
+            html += `<li><b>الإجمالي الكلي للشحنة:</b><br>إجمالي الفوارغ = <code>${totalTare.toFixed(3)}</code> كجم | إجمالي الوزن القائم = <code>${totalGross.toFixed(3)}</code> كجم | إجمالي الصافي = <b><code>${totalNet.toFixed(3)}</code> كجم</b> | إجمالي الاذن = <code>${totalAzn.toFixed(3)}</code> كجم | <b>إجمالي التقاطيع النهائي = <code>${totalTaqatee.toFixed(3)}</code> كجم</b>.</li>`;
+            html += `</ol>`;
+            box.innerHTML = html;
+        }
+
+        window.addEventListener('DOMContentLoaded', populateVacuumItemSelect);
 
         // --- Navigation (Swipe to go back via History API) ---
         function showHome() {
