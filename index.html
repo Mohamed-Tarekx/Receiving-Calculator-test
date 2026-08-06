@@ -1303,6 +1303,9 @@
 
             <div class="results-section" id="vacuumTotalsSection" style="display: none;">
                 <h3 class="results-title">الإجمالي الكلي للشحنة:</h3>
+                <div class="info-box" style="margin-bottom: 14px; font-size: 0.85rem;">
+                    ملاحظة: الإجمالي الكلي بيشمل فقط أصناف اللحم (من صرة لحد عكاوي) المطبق عليها خصم التقاطيع. أصناف السقط (كبدة، قلب، كلاوي، كرشة، لحم راس، فشة، مفاريم، ممبار) بتحسب لوحدها في كارتها ومش بتدخل في هذا الإجمالي، تماماً زي الشيت الأصلي.
+                </div>
                 <div class="result-box blue">
                     <div class="result-box-label">إجمالي وزن الفوارغ (سبات + أكياس)</div>
                     <div class="result-box-value" id="vacTotalTare">0.000 كجم</div>
@@ -2259,13 +2262,16 @@
                 const taqatee = item.hasAzn ? (net * 0.02) : 0;
                 const azn = net - taqatee;
 
-                totalTare += tare;
-                totalGross += gross;
-                totalNet += net;
-                totalAzn += azn;
-                totalTaqatee += taqatee;
+                // السقط (الأصناف غير المشمولة بالتقاطيع) لا يدخل في الإجمالي الكلي للشحنة، تماماً زي الشيت الأصلي
+                if (item.hasAzn) {
+                    totalTare += tare;
+                    totalGross += gross;
+                    totalNet += net;
+                    totalAzn += azn;
+                    totalTaqatee += taqatee;
+                }
 
-                itemBreakdown.push({ name: item.name, baskets, bags, gross, tare, net, azn, taqatee, hasAzn: item.hasAzn, noVacuum });
+                itemBreakdown.push({ name: item.name, baskets, bags, gross, tare, net, azn, taqatee, hasAzn: item.hasAzn, noVacuum, basketWeight: item.basketWeight, bagWeight: item.bagWeight });
             });
 
             if (!anyValid) {
@@ -2307,7 +2313,7 @@
             itemBreakdown.forEach(it => {
                 const vacuumNote = it.noVacuum ? ' (بدون فاكيوم - لا يُخصم وزن الأكياس)' : '';
                 html += `<li><b>صنف: ${it.name}${vacuumNote}</b><br>`;
-                html += `إجمالي الفوارغ = <code>${it.tare.toFixed(3)}</code> كجم (سبات: <code>${it.baskets}</code> × وزن السبت، ${it.noVacuum ? 'مفيش خصم أكياس' : `أكياس: <code>${it.bags}</code> × وزن الكيس`}).<br>`;
+                html += `إجمالي الفوارغ = <code>${it.tare.toFixed(3)}</code> كجم (سبات: <code>${it.baskets}</code> × وزن السبت <code>${it.basketWeight}</code> كجم، ${it.noVacuum ? 'مفيش خصم أكياس' : `أكياس: <code>${it.bags}</code> × وزن الكيس <code>${it.bagWeight}</code> كجم`}).<br>`;
                 html += `صافي الوزن = <code>${it.gross.toFixed(3)}</code> - <code>${it.tare.toFixed(3)}</code> = <b><code>${it.net.toFixed(3)}</code> كجم</b>.<br>`;
                 if (it.hasAzn) {
                     html += `التقاطيع (2%) = <code>${it.net.toFixed(3)}</code> × 2% = <code>${it.taqatee.toFixed(3)}</code> كجم.<br>`;
