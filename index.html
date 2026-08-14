@@ -2480,12 +2480,81 @@
         // مبنية على تحليل شكل نموذج إذن الصرف الثابت. لو الصورة ملتقطة بزاوية أو تأطير مختلف شوية
         // بيفضل في هامش تسامح كافي لأن كل عمود بيتقرأ لوحده مش بالاعتماد على حدود دقيقة جداً.
         const DOC_COLUMNS = {
-            mCol:       { xStart: 0.945, xEnd: 1.000 }, // عمود "م" (الترقيم) - أقصى اليمين
+            mCol:       { xStart: 0.900, xEnd: 1.000 }, // عمود "م" (الترقيم) - أقصى اليمين (بهامش أمان أوسع)
             barcodeCol: { xStart: 0.660, xEnd: 0.870 }, // عمود الباركود
             nameCol:    { xStart: 0.170, xEnd: 0.670 }  // عمود اسم الصنف
         };
         // نطاق الجدول رأسياً (فوق العنوان وتحت آخر صف) - هامش آمن يشمل كل الجدول تقريباً
         const DOC_TABLE_Y = { yStart: 0.12, yEnd: 0.97 };
+
+        // تحديد حدود الورقة الفعلية داخل الصورة الملتقطة بالكاميرا (لأن الصورة غالباً بتشمل خلفية/طاولة حوالين الورقة).
+        // نسب الأعمدة الثابتة في DOC_COLUMNS مبنية على افتراض إن الورقة تملأ الصورة بالكامل، فلو في هامش خلفية حوالين
+        // الورقة (زي طاولة أو أرضية ظاهرة في الصورة)، لازم نلاقي حدود الورقة البيضاء الحقيقية ونقص عليها الصورة أولاً
+        // قبل ما نطبق نسب الأعمدة، وإلا هتتقرأ أعمدة غلط تماماً وتظهر نتائج بحث عشوائية.
+        function detectPaperBounds(ctx, width, height) {
+            const imgData = ctx.getImageData(0, 0, width, height).data;
+            // نحسب لكل صف ولكل عمود نسبة البكسلات اللي شكلها "ورقة" (فاتحة ومحايدة اللون مش لون خلفية ملون)
+            const colPaperCount = new Array(width).fill(0);
+            const rowPaperCount = new Array(height).fill(0);
+            // نعمل sampling كل 2 بكسل تسريعاً للأداء مع صور الكاميرا الكبيرة
+            const step = 2;
+            for (let y = 0; y < height; y += step) {
+                for (let x = 0; x < width; x += step) {
+                    const idx = (y * width + x) * 4;
+                    const r = imgData[idx], g = imgData[idx + 1], b = imgData[idx + 2];
+                    const brightness = (r + g + b) / 3;
+                    const isPaper = brightness > 120 &&
+                        Math.abs(r - g) < 40 && Math.abs(g - b) < 40 && Math.abs(r - b) < 40;
+                    if (isPaper) {
+                        colPaperCount[x] += 1;
+                        rowPaperCount[y] += 1;
+                    }
+                }
+            }
+            const colSamples = Math.ceil(height / step);
+            const rowSamples = Math.ceil(width / step);
+            const colThreshold = colSamples * 0.5;
+            const rowThreshold = rowSamples * 0.5;
+            let xStartPx = 0, xEndPx = width - 1, yStartPx = 0, yEndPx = height - 1;
+            for (let x = 0; x < width; x++) { if (colPaperCount[x] > colThreshold) { xStartPx = x; break; } }
+            for (let x = width - 1; x >= 0; x--) { if (colPaperCount[x] > colThreshold) { xEndPx = x; break; } }
+            for (let y = 0; y < height; y++) { if (rowPaperCount[y] > rowThreshold) { yStartPx = y; break; } }
+            for (let y = height - 1; y >= 0; y--) { if (rowPaperCount[y] > rowThreshold) { yEndPx = y; break; } }
+            // حماية: لو الاكتشاف فشل أو رجع حدود غير منطقية (ورقة أصغر من نص الصورة)، نستخدم الصورة كاملة كما هي
+            const detectedW = xEndPx - xStartPx;
+            const detectedH = yEndPx - yStartPx;
+            if (detectedW < width * 0.4 || detectedH < height * 0.4) {
+                return { xStart: 0, xEnd: width, yStart: 0, yEnd: height };
+            }
+            return { xStart: xStartPx, xEnd: xEndPx, yStart: yStartPx, yEnd: yEndPx };
+        }
+
+        // نرجع نسخة من الصورة مقصوصة على حدود الورقة فقط (بدون أي خلفية/طاولة حوالينها)، مع كاش داخل بيانات الصفحة
+        // عشان الاكتشاف يحصل مرة واحدة بس لكل صفحة مش مرة لكل عمود.
+        function getPaperCroppedImage(page) {
+            if (page.paperCroppedDataUrl) {
+                return Promise.resolve(page.paperCroppedDataUrl);
+            }
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.naturalWidth;
+                    canvas.height = img.naturalHeight;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+                    const bounds = detectPaperBounds(ctx, canvas.width, canvas.height);
+                    const outCanvas = document.createElement('canvas');
+                    outCanvas.width = bounds.xEnd - bounds.xStart;
+                    outCanvas.height = bounds.yEnd - bounds.yStart;
+                    const outCtx = outCanvas.getContext('2d');
+                    outCtx.drawImage(img, bounds.xStart, bounds.yStart, outCanvas.width, outCanvas.height, 0, 0, outCanvas.width, outCanvas.height);
+                    page.paperCroppedDataUrl = outCanvas.toDataURL('image/png');
+                    resolve(page.paperCroppedDataUrl);
+                };
+                img.src = page.imageDataUrl;
+            });
+        }
 
         function cropImageRegion(imageDataUrl, xStart, xEnd, yStart, yEnd) {
             return new Promise((resolve) => {
@@ -2549,9 +2618,13 @@
             try {
                 const worker = await getTesseractWorker();
 
-                const mResult = await ocrColumnToRows(worker, page.imageDataUrl, DOC_COLUMNS.mCol, DOC_TABLE_Y, true);
-                const barcodeResult = await ocrColumnToRows(worker, page.imageDataUrl, DOC_COLUMNS.barcodeCol, DOC_TABLE_Y, true);
-                const nameResult = await ocrColumnToRows(worker, page.imageDataUrl, DOC_COLUMNS.nameCol, DOC_TABLE_Y, false);
+                // نقص الصورة على حدود الورقة الفعلية أولاً (نتخلص من أي خلفية/طاولة ظاهرة حوالين الورقة في صورة الكاميرا)
+                // عشان نسب الأعمدة الثابتة (DOC_COLUMNS) تتظبط صح على الجدول الحقيقي مش على الصورة الخام.
+                const paperImageUrl = await getPaperCroppedImage(page);
+
+                const mResult = await ocrColumnToRows(worker, paperImageUrl, DOC_COLUMNS.mCol, DOC_TABLE_Y, true);
+                const barcodeResult = await ocrColumnToRows(worker, paperImageUrl, DOC_COLUMNS.barcodeCol, DOC_TABLE_Y, true);
+                const nameResult = await ocrColumnToRows(worker, paperImageUrl, DOC_COLUMNS.nameCol, DOC_TABLE_Y, false);
                 // نرجع الإعدادات للوضع العام بعد الانتهاء
                 await worker.setParameters({ tessedit_char_whitelist: '' });
 
@@ -2674,7 +2747,9 @@
             const pageIdx = docPages.indexOf(page);
 
             title.innerText = 'صفحة ' + (pageIdx + 1);
-            img.src = page.imageDataUrl;
+            // نعرض النسخة المقصوصة على حدود الورقة (لو جاهزة) عشان التمرير التلقائي لمكان الصف يتظبط صح على yNorm
+            // المحسوب أصلاً بالنسبة للورقة المقصوصة مش الصورة الخام بخلفيتها.
+            img.src = page.paperCroppedDataUrl || page.imageDataUrl;
             modal.style.display = 'flex';
 
             // نكبّر الصورة ونعمل تمرير تلقائي لمكان الصف لو متوفر ارتفاعه النسبي
