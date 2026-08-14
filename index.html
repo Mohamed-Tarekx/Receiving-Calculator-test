@@ -1352,7 +1352,7 @@
                 <span class="module-title">بحث في إذن الصرف</span>
             </div>
             <div class="info-box">
-                صور أو ارفع صفحات إذن الصرف (تقدر تضيف أكتر من صورة لو الإذن فيه أكتر من صفحة). بعد كده اكتب آخر 3 أرقام من الباركود أو أي جزء من الصنف في خانة البحث، والبرنامج هيدورلك على مكانه في الصور ويكبّره لك. <b>ملاحظة:</b> القراءة الآلية للصور تقريبية وممكن تخطئ في بعض الحالات، خصوصاً لو الصورة مش واضحة أو فيها ميل/ظل - لو النتيجة مش دقيقة، استخدم التكبير اليدوي على الصورة للتأكد بعينك.
+                صور أو ارفع صفحات إذن الصرف (تقدر تضيف أكتر من صورة لو الإذن فيه أكتر من صفحة). البرنامج مبني على شكل نموذج إذن الصرف الثابت، وبيقرأ فقط أعمدة (م، الباركود، اسم الصنف) من الجدول لتحسين الدقة. اكتب آخر 3 أرقام من الباركود أو جزء من اسم الصنف في خانة البحث، والبرنامج هيدورلك على مكانه ويكبّره لك. <b>ملاحظة:</b> القراءة الآلية تقريبية وممكن تخطئ أحياناً، خصوصاً لو الصورة مايلة أو فيها ظل - لو النتيجة مش دقيقة، افتح الصورة المكبّرة للتأكد بعينك.
             </div>
 
             <div style="display: flex; gap: 10px; margin-bottom: 16px;">
@@ -1376,10 +1376,10 @@
             <div class="steps-box" id="docSearchStepsBox">
                 <h4>💡 طريقة الاستخدام:</h4>
                 <ol>
-                    <li>صور كل صفحات إذن الصرف (أو ارفعها لو مصورة مسبقاً) - كل صورة بتتضاف كصفحة منفصلة.</li>
-                    <li>البرنامج بيقرأ النصوص والأرقام جوه كل صورة تلقائياً في الخلفية أول ما تتضاف (محتاج اتصال إنترنت أول مرة بس لتحميل أداة القراءة، وبعدين بيشتغل أوفلاين).</li>
-                    <li>اكتب آخر 3 أرقام من الباركود (أو جزء من اسم الصنف) في خانة البحث، وهيظهرلك في أي صفحة وأي مكان لقاها فيه.</li>
-                    <li>دوس على النتيجة عشان تفتح الصورة مكبّرة على المكان المتوقع للنص، وتقدر كمان تكبّر/تصغر يدوياً للتأكيد بعينك.</li>
+                    <li>صور كل صفحات إذن الصرف (أو ارفعها لو مصورة مسبقاً) - كل صورة بتتضاف كصفحة منفصلة. حاول تصور الصفحة كاملة ومستقيمة قد الإمكان لتحسين الدقة.</li>
+                    <li>البرنامج بيقرأ فقط أعمدة (م، الباركود، اسم الصنف) من كل صورة تلقائياً في الخلفية أول ما تتضاف (محتاج اتصال إنترنت أول مرة بس لتحميل أداة القراءة، وبعدين بيشتغل أوفلاين). التركيز على 3 أعمدة بس بيحسّن الدقة مقارنة بقراءة الجدول كله.</li>
+                    <li>اكتب آخر 3 أرقام من الباركود (أو جزء من اسم الصنف) في خانة البحث، وهيظهرلك رقم الصنف بالإذن (عمود م) واسمه وباركوده في أي صفحة لقاها فيها.</li>
+                    <li>دوس على النتيجة عشان تفتح الصورة مكبّرة على مكان الصف، وتقدر كمان تكبّر/تصغر يدوياً للتأكيد بعينك.</li>
                 </ol>
             </div>
         </div>
@@ -2435,7 +2435,7 @@
             const reader = new FileReader();
             reader.onload = function(e) {
                 const id = 'docPage' + (docPageCounter++);
-                const page = { id, imageDataUrl: e.target.result, ocrWords: [], ocrStatus: 'pending' };
+                const page = { id, imageDataUrl: e.target.result, ocrRows: [], ocrStatus: 'pending' };
                 docPages.push(page);
                 renderDocPagesStatus();
                 renderDocPagesList();
@@ -2476,19 +2476,116 @@
             searchGroup.style.display = docPages.length > 0 ? 'block' : 'none';
         }
 
+        // نسب المواقع التقريبية لأعمدة (م، الباركود، اسم الصنف) بالنسبة لعرض الصورة الكاملة
+        // مبنية على تحليل شكل نموذج إذن الصرف الثابت. لو الصورة ملتقطة بزاوية أو تأطير مختلف شوية
+        // بيفضل في هامش تسامح كافي لأن كل عمود بيتقرأ لوحده مش بالاعتماد على حدود دقيقة جداً.
+        const DOC_COLUMNS = {
+            mCol:       { xStart: 0.945, xEnd: 1.000 }, // عمود "م" (الترقيم) - أقصى اليمين
+            barcodeCol: { xStart: 0.660, xEnd: 0.870 }, // عمود الباركود
+            nameCol:    { xStart: 0.170, xEnd: 0.670 }  // عمود اسم الصنف
+        };
+        // نطاق الجدول رأسياً (فوق العنوان وتحت آخر صف) - هامش آمن يشمل كل الجدول تقريباً
+        const DOC_TABLE_Y = { yStart: 0.12, yEnd: 0.97 };
+
+        function cropImageRegion(imageDataUrl, xStart, xEnd, yStart, yEnd) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = function() {
+                    const sx = img.naturalWidth * xStart;
+                    const sy = img.naturalHeight * yStart;
+                    const sw = img.naturalWidth * (xEnd - xStart);
+                    const sh = img.naturalHeight * (yEnd - yStart);
+                    const canvas = document.createElement('canvas');
+                    canvas.width = sw;
+                    canvas.height = sh;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+                    resolve({ dataUrl: canvas.toDataURL('image/png'), width: sw, height: sh });
+                };
+                img.src = imageDataUrl;
+            });
+        }
+
+        // تجميع خطوط النص القادمة من OCR في صفوف بناءً على تقارب مركز الارتفاع (y) بينها
+        function groupLinesIntoRows(lines) {
+            const rows = [];
+            const sorted = [...lines].sort((a, b) => a.yCenter - b.yCenter);
+            sorted.forEach(line => {
+                let matched = rows.find(r => Math.abs(r.yCenter - line.yCenter) < r.height * 0.6);
+                if (matched) {
+                    matched.text += (matched.text ? ' ' : '') + line.text;
+                    matched.yCenter = (matched.yCenter + line.yCenter) / 2;
+                    matched.height = Math.max(matched.height, line.height);
+                } else {
+                    rows.push({ text: line.text, yCenter: line.yCenter, height: line.height });
+                }
+            });
+            return rows;
+        }
+
+        async function ocrColumnToRows(worker, imageDataUrl, colDef, tableY, digitsOnly) {
+            const crop = await cropImageRegion(imageDataUrl, colDef.xStart, colDef.xEnd, tableY.yStart, tableY.yEnd);
+            if (digitsOnly) {
+                await worker.setParameters({ tessedit_char_whitelist: '0123456789' });
+            } else {
+                await worker.setParameters({ tessedit_char_whitelist: '' });
+            }
+            const result = await worker.recognize(crop.dataUrl);
+            const lines = [];
+            if (result.data && result.data.lines) {
+                result.data.lines.forEach(l => {
+                    const text = (l.text || '').trim();
+                    if (text.length === 0) return;
+                    const yCenter = (l.bbox.y0 + l.bbox.y1) / 2;
+                    const height = l.bbox.y1 - l.bbox.y0;
+                    lines.push({ text, yCenter, height });
+                });
+            }
+            const rows = groupLinesIntoRows(lines);
+            return { rows, cropHeight: crop.height, cropWidth: crop.width };
+        }
+
         async function runOcrOnPage(page) {
             try {
                 const worker = await getTesseractWorker();
-                const result = await worker.recognize(page.imageDataUrl);
-                const words = [];
-                if (result.data && result.data.words) {
-                    result.data.words.forEach(w => {
-                        if (w.text && w.text.trim().length > 0) {
-                            words.push({ text: w.text.trim(), bbox: w.bbox });
-                        }
+
+                const mResult = await ocrColumnToRows(worker, page.imageDataUrl, DOC_COLUMNS.mCol, DOC_TABLE_Y, true);
+                const barcodeResult = await ocrColumnToRows(worker, page.imageDataUrl, DOC_COLUMNS.barcodeCol, DOC_TABLE_Y, true);
+                const nameResult = await ocrColumnToRows(worker, page.imageDataUrl, DOC_COLUMNS.nameCol, DOC_TABLE_Y, false);
+                // نرجع الإعدادات للوضع العام بعد الانتهاء
+                await worker.setParameters({ tessedit_char_whitelist: '' });
+
+                // نطابق الصفوف الثلاثة مع بعض بناءً على أقرب مركز ارتفاع نسبي (كنسبة من ارتفاع كل عمود)
+                const cropH = Math.max(mResult.cropHeight, barcodeResult.cropHeight, nameResult.cropHeight);
+                const normalize = (rows, h) => rows.map(r => ({ ...r, yNorm: r.yCenter / h }));
+                const mRows = normalize(mResult.rows, mResult.cropHeight);
+                const barcodeRows = normalize(barcodeResult.rows, barcodeResult.cropHeight);
+                const nameRows = normalize(nameResult.rows, nameResult.cropHeight);
+
+                const combinedRows = [];
+                barcodeRows.forEach(bRow => {
+                    // نلاقي أقرب صف كود "م" وأقرب صف اسم صنف بنفس الارتفاع النسبي تقريباً
+                    let closestM = null, closestMDist = Infinity;
+                    mRows.forEach(mRow => {
+                        const dist = Math.abs(mRow.yNorm - bRow.yNorm);
+                        if (dist < closestMDist) { closestMDist = dist; closestM = mRow; }
                     });
-                }
-                page.ocrWords = words;
+                    let closestName = null, closestNameDist = Infinity;
+                    nameRows.forEach(nRow => {
+                        const dist = Math.abs(nRow.yNorm - bRow.yNorm);
+                        if (dist < closestNameDist) { closestNameDist = dist; closestName = nRow; }
+                    });
+
+                    const tolerance = 0.03; // هامش تسامح نسبي لمطابقة الصفوف
+                    combinedRows.push({
+                        barcode: bRow.text.replace(/\s+/g, ''),
+                        mNumber: (closestM && closestMDist < tolerance) ? closestM.text.replace(/\D/g, '') : '',
+                        itemName: (closestName && closestNameDist < tolerance) ? closestName.text : '',
+                        yNorm: bRow.yNorm
+                    });
+                });
+
+                page.ocrRows = combinedRows;
                 page.ocrStatus = 'done';
             } catch (err) {
                 console.error('OCR error on page', page.id, err);
@@ -2533,10 +2630,12 @@
             const lowerInput = input.toLowerCase();
             let matches = [];
             docPages.forEach((page, pageIdx) => {
-                if (page.ocrStatus !== 'done') return;
-                page.ocrWords.forEach(w => {
-                    if (w.text.toLowerCase().includes(lowerInput)) {
-                        matches.push({ pageId: page.id, pageIndex: pageIdx, word: w });
+                if (page.ocrStatus !== 'done' || !page.ocrRows) return;
+                page.ocrRows.forEach(row => {
+                    const inBarcode = row.barcode && row.barcode.includes(lowerInput);
+                    const inName = row.itemName && row.itemName.toLowerCase().includes(lowerInput);
+                    if (inBarcode || inName) {
+                        matches.push({ pageId: page.id, pageIndex: pageIdx, row });
                     }
                 });
             });
@@ -2554,17 +2653,18 @@
             let html = `<div class="alert-banner green" style="background-color: var(--success-bg); border-color: var(--success-border); color: #065f46;">تم العثور على ${matches.length} تطابق</div>`;
             matches.forEach(m => {
                 html += `
-                    <div class="result-box blue" style="cursor:pointer; margin-top: 10px;" onclick="openDocImageModal('${m.pageId}', ${m.word.bbox.x0}, ${m.word.bbox.y0}, ${m.word.bbox.x1}, ${m.word.bbox.y1})">
-                        <div class="result-box-label">صفحة ${m.pageIndex + 1}</div>
-                        <div class="result-box-value" style="font-size: 1.1rem;">${m.word.text}</div>
-                        <div style="font-size: 0.8rem; color: #64748b; margin-top:4px;">دوس هنا لفتح الصورة مكبّرة على مكان النتيجة</div>
+                    <div class="result-box blue" style="cursor:pointer; margin-top: 10px;" onclick="openDocImageModal('${m.pageId}', ${m.row.yNorm})">
+                        <div class="result-box-label">صفحة ${m.pageIndex + 1} ${m.row.mNumber ? '| رقم الصنف بالإذن: ' + m.row.mNumber : ''}</div>
+                        <div class="result-box-value" style="font-size: 1.05rem;">${m.row.itemName || '(اسم الصنف غير واضح)'}</div>
+                        <div style="font-size: 0.9rem; color: #475569; margin-top:4px; direction:ltr; text-align:right;">${m.row.barcode || ''}</div>
+                        <div style="font-size: 0.8rem; color: #64748b; margin-top:4px;">دوس هنا لفتح الصورة مكبّرة على مكان هذا الصف</div>
                     </div>
                 `;
             });
             resultsDiv.innerHTML = html;
         }
 
-        function openDocImageModal(pageId, x0, y0, x1, y1) {
+        function openDocImageModal(pageId, yNorm) {
             const page = docPages.find(p => p.id === pageId);
             if (!page) return;
             const modal = document.getElementById('docImageModal');
@@ -2577,16 +2677,19 @@
             img.src = page.imageDataUrl;
             modal.style.display = 'flex';
 
-            // نكبّر الصورة ونعمل تمرير تلقائي لمكان النتيجة لو متوفرة إحداثياتها
+            // نكبّر الصورة ونعمل تمرير تلقائي لمكان الصف لو متوفر ارتفاعه النسبي
             img.onload = function() {
                 const naturalWidth = img.naturalWidth;
+                const naturalHeight = img.naturalHeight;
                 const displayScale = 2.2; // مستوى تكبير مبدئي يسهّل قراءة الأكواد الصغيرة
                 img.style.width = (naturalWidth * displayScale) + 'px';
 
-                if (typeof x0 === 'number' && !isNaN(x0)) {
+                if (typeof yNorm === 'number' && !isNaN(yNorm)) {
+                    // yNorm محسوب بالنسبة لمنطقة الجدول (DOC_TABLE_Y)، نحوله لموضع مطلق في الصورة الكاملة
+                    const absoluteY = (DOC_TABLE_Y.yStart + yNorm * (DOC_TABLE_Y.yEnd - DOC_TABLE_Y.yStart)) * naturalHeight;
                     setTimeout(() => {
-                        const scrollX = (x0 * displayScale) - (body.clientWidth / 2);
-                        const scrollY = (y0 * displayScale) - (body.clientHeight / 3);
+                        const scrollX = 0;
+                        const scrollY = (absoluteY * displayScale) - (body.clientHeight / 3);
                         body.scrollTo({ left: Math.max(0, scrollX), top: Math.max(0, scrollY), behavior: 'smooth' });
                     }, 100);
                 } else {
