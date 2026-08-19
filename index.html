@@ -1352,51 +1352,33 @@
                 <span class="module-title">بحث في إذن الصرف</span>
             </div>
             <div class="info-box">
-                صور أو ارفع صفحات إذن الصرف (تقدر تضيف أكتر من صورة لو الإذن فيه أكتر من صفحة). البرنامج مبني على شكل نموذج إذن الصرف الثابت، وبيقرأ فقط أعمدة (م، الباركود، اسم الصنف) من الجدول لتحسين الدقة. اكتب آخر 3 أرقام من الباركود أو جزء من اسم الصنف في خانة البحث، والبرنامج هيدورلك على مكانه ويكبّره لك. <b>ملاحظة:</b> القراءة الآلية تقريبية وممكن تخطئ أحياناً، خصوصاً لو الصورة مايلة أو فيها ظل - لو النتيجة مش دقيقة، افتح الصورة المكبّرة للتأكد بعينك.
+                ارفع ملف إكسيل إذن الصرف (نفس التنسيق الثابت اللي بيتطبع بيه من النظام). اكتب <b>آخر أرقام من الباركود</b> في خانة البحث، والبرنامج هيطلعلك رقم الصنف (عمود م)، اسم الصنف، والكمية الفعلية لأي صنف باركوده بينتهي بنفس الأرقام اللي كتبتها بالظبط (مش أي مكان في الباركود).
             </div>
 
-            <div style="display: flex; gap: 10px; margin-bottom: 16px;">
-                <button class="add-sample-btn" style="flex:1; padding: 14px; font-size: 0.9rem;" onclick="triggerDocCapture()">📷 تصوير صفحة</button>
-                <button class="add-sample-btn" style="flex:1; padding: 14px; font-size: 0.9rem; background-color: var(--dark-header);" onclick="triggerDocUpload()">📁 رفع من المعرض</button>
+            <div class="form-group" style="background: #f8fafc; padding: 16px; border-radius: 12px; border: 1px dashed #cbd5e1; margin-bottom: 24px;">
+                <label style="color: var(--primary-dark); font-size: 0.95rem; margin-bottom: 10px;">رفع ملف إذن الصرف (إكسيل)</label>
+                <input type="file" id="docExcelFile" accept=".xlsx, .xls, .csv" onchange="handleDocExcelUpload(event)" style="padding: 10px; font-size: 0.9rem; background: #fff;">
             </div>
-            <input type="file" id="docCaptureInput" accept="image/*" capture="environment" style="display:none;" onchange="handleDocFiles(event)">
-            <input type="file" id="docUploadInput" accept="image/*" multiple style="display:none;" onchange="handleDocFiles(event)">
 
             <div id="docPagesStatus"></div>
 
             <div class="form-group" id="docSearchGroup" style="display:none;">
-                <label>بحث بآخر 3 أرقام من الباركود أو اسم الصنف</label>
-                <input type="text" id="docSearchInput" placeholder="مثال: 708 أو دانك" oninput="searchDocPages()">
+                <label>بحث بآخر أرقام من الباركود</label>
+                <input type="text" id="docSearchInput" inputmode="numeric" placeholder="مثال: 150 (يبحث عن باركود ينتهي بـ 150)" oninput="searchDocPages()">
             </div>
 
             <div id="docSearchResults"></div>
 
-            <div id="docPagesList"></div>
-
             <div class="steps-box" id="docSearchStepsBox">
                 <h4>💡 طريقة الاستخدام:</h4>
                 <ol>
-                    <li>صور كل صفحات إذن الصرف (أو ارفعها لو مصورة مسبقاً) - كل صورة بتتضاف كصفحة منفصلة. حاول تصور الصفحة كاملة ومستقيمة قد الإمكان لتحسين الدقة.</li>
-                    <li>البرنامج بيقرأ فقط أعمدة (م، الباركود، اسم الصنف) من كل صورة تلقائياً في الخلفية أول ما تتضاف (محتاج اتصال إنترنت أول مرة بس لتحميل أداة القراءة، وبعدين بيشتغل أوفلاين). التركيز على 3 أعمدة بس بيحسّن الدقة مقارنة بقراءة الجدول كله.</li>
-                    <li>اكتب آخر 3 أرقام من الباركود (أو جزء من اسم الصنف) في خانة البحث، وهيظهرلك رقم الصنف بالإذن (عمود م) واسمه وباركوده في أي صفحة لقاها فيها.</li>
-                    <li>دوس على النتيجة عشان تفتح الصورة مكبّرة على مكان الصف، وتقدر كمان تكبّر/تصغر يدوياً للتأكيد بعينك.</li>
+                    <li>ارفع ملف إذن الصرف بصيغة إكسيل (نفس شكله المطبوع من النظام، بدون أي تعديل في ترتيب الأعمدة).</li>
+                    <li>اكتب آخر أرقام من الباركود في خانة البحث (مش لازم الباركود كامل). البرنامج بيدور فقط على الأصناف اللي باركودها بينتهي بنفس الأرقام دي بالظبط، مش أي صنف باركوده فيه نفس الأرقام في أي مكان.</li>
+                    <li>لو أكتر من صنف نهايته نفس الأرقام، هيظهرلك كل الأصناف المطابقة مع رقمها بعمود "م" واسمها وكميتها الفعلية.</li>
                 </ol>
             </div>
         </div>
         </div>
-
-    <!-- نافذة تكبير صورة الإذن -->
-    <div id="docImageModal" style="display:none; position:fixed; inset:0; background:rgba(17,24,39,0.95); z-index:2000; align-items:center; justify-content:center; padding:12px;">
-        <div style="position:relative; width:100%; height:100%; display:flex; flex-direction:column;">
-            <div style="display:flex; justify-content:space-between; align-items:center; padding:10px; color:white;">
-                <span id="docImageModalTitle" style="font-weight:bold;">صفحة 1</span>
-                <button onclick="closeDocImageModal()" style="background:#374151; color:white; border:none; border-radius:50%; width:36px; height:36px; font-size:1.1rem;">✕</button>
-            </div>
-            <div id="docImageModalBody" style="flex:1; overflow:auto; touch-action:pinch-zoom; display:flex; align-items:flex-start; justify-content:center;">
-                <img id="docImageModalImg" style="max-width:none; touch-action:pinch-zoom;">
-            </div>
-        </div>
-    </div>
 
     <!-- Notification Toast system -->
     <div id="appToast" class="app-toast"></div>
@@ -2386,395 +2368,149 @@
 
         window.addEventListener('DOMContentLoaded', populateVacuumItemSelect);
 
-        // --- DOCUMENT SEARCH MODULE (بحث في إذن الصرف) ---
-        let docPages = []; // { id, imageDataUrl, ocrWords: [{text, bbox:{x0,y0,x1,y1}}], ocrStatus: 'pending'|'done'|'error' }
-        let docPageCounter = 0;
-        let tesseractLoadPromise = null;
-        let tesseractWorker = null;
+        // --- DOCUMENT SEARCH MODULE (بحث في إذن الصرف) - قائم على رفع ملف إكسيل الإذن مباشرة ---
+        // كل صف في الشيت بيمثل صنف واحد بالأعمدة الثابتة: م / الباركود / اسم الصنف / الكمية الفعلية
+        // (نفس تنسيق الطباعة الأصلي من نظام المخازن، بترتيب أعمدة ثابت حتى لو البيانات بتتغير كل مرة).
+        let docItems = []; // { mNumber, barcode, itemName, actualQty }
+        let docFileLoaded = false;
 
-        function triggerDocCapture() {
-            document.getElementById('docCaptureInput').click();
-        }
-
-        function triggerDocUpload() {
-            document.getElementById('docUploadInput').click();
-        }
-
-        function loadTesseractLibrary() {
-            if (tesseractLoadPromise) return tesseractLoadPromise;
-            tesseractLoadPromise = new Promise((resolve, reject) => {
-                if (window.Tesseract) {
-                    resolve();
-                    return;
+        // فهرسة أعمدة الشيت بالاعتماد على نص صف العناوين نفسه (مش على رقم عمود ثابت) عشان نضمن الدقة
+        // حتى لو تغير ترتيب الأعمدة شوية بين نسخة وأخرى من نفس تنسيق الطباعة.
+        function findDocHeaderRow(rows) {
+            for (let i = 0; i < Math.min(rows.length, 20); i++) {
+                const row = rows[i];
+                if (!row) continue;
+                const rowText = row.map(c => (c !== undefined && c !== null) ? String(c).trim() : '');
+                const hasM = rowText.some(c => c === 'م');
+                const hasBarcode = rowText.some(c => c.includes('الباركود'));
+                const hasName = rowText.some(c => c.includes('اسم الصنف'));
+                if (hasM && hasBarcode && hasName) {
+                    return { index: i, rowText };
                 }
-                const script = document.createElement('script');
-                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.0.4/tesseract.min.js';
-                script.onload = () => resolve();
-                script.onerror = () => reject(new Error('تعذر تحميل أداة القراءة الآلية - تأكد من الاتصال بالإنترنت أول مرة'));
-                document.head.appendChild(script);
-            });
-            return tesseractLoadPromise;
+            }
+            return null;
         }
 
-        async function getTesseractWorker() {
-            if (tesseractWorker) return tesseractWorker;
-            await loadTesseractLibrary();
-            // ندعم العربي والإنجليزي مع بعض لأن الإذن فيه أرقام وأكواد لاتينية وأسماء أصناف عربي
-            tesseractWorker = await Tesseract.createWorker(['ara', 'eng']);
-            return tesseractWorker;
+        function processDocExcelData(rows) {
+            const header = findDocHeaderRow(rows);
+            if (!header) return [];
+            const rowText = header.rowText;
+            const mCol = rowText.findIndex(c => c === 'م');
+            const barcodeCol = rowText.findIndex(c => c.includes('الباركود'));
+            const nameCol = rowText.findIndex(c => c.includes('اسم الصنف'));
+            const actualQtyCol = rowText.findIndex(c => c.includes('الكمية الفعلية'));
+
+            const items = [];
+            for (let i = header.index + 1; i < rows.length; i++) {
+                const row = rows[i];
+                if (!row) continue;
+                const mRaw = row[mCol];
+                const barcodeRaw = row[barcodeCol];
+                const nameRaw = row[nameCol];
+                // نتجاهل أي صف مالوش رقم صنف (م) أو باركود - زي صفوف التذييل (اسم المدير، خط الفصل، إلخ)
+                if (mRaw === undefined || mRaw === null || String(mRaw).trim() === '') continue;
+                if (!/^\d+$/.test(String(mRaw).trim())) continue;
+                const barcode = (barcodeRaw !== undefined && barcodeRaw !== null) ? String(barcodeRaw).trim() : '';
+                if (!barcode) continue;
+                const itemName = (nameRaw !== undefined && nameRaw !== null) ? String(nameRaw).trim() : '';
+                let actualQty = '';
+                if (actualQtyCol !== -1 && row[actualQtyCol] !== undefined && row[actualQtyCol] !== null) {
+                    actualQty = row[actualQtyCol];
+                }
+                items.push({
+                    mNumber: String(mRaw).trim(),
+                    barcode: barcode,
+                    itemName: itemName,
+                    actualQty: actualQty
+                });
+            }
+            return items;
         }
 
-        function handleDocFiles(event) {
-            const files = Array.from(event.target.files || []);
-            if (files.length === 0) return;
-            files.forEach(file => addDocPage(file));
-            event.target.value = '';
-        }
-
-        function addDocPage(file) {
+        function handleDocExcelUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
             const reader = new FileReader();
             reader.onload = function(e) {
-                const id = 'docPage' + (docPageCounter++);
-                const page = { id, imageDataUrl: e.target.result, ocrRows: [], ocrStatus: 'pending' };
-                docPages.push(page);
-                renderDocPagesStatus();
-                renderDocPagesList();
-                runOcrOnPage(page);
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, {type: 'array'});
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    const rows = XLSX.utils.sheet_to_json(worksheet, {header: 1});
+                    const items = processDocExcelData(rows);
+                    if (items.length === 0) {
+                        showNotification("لم يتم العثور على بيانات صالحة! تأكد من أن الملف بنفس تنسيق إذن الصرف الأصلي.");
+                        docFileLoaded = false;
+                        renderDocStatus();
+                        return;
+                    }
+                    docItems = items;
+                    docFileLoaded = true;
+                    renderDocStatus();
+                    showNotification(`تم تحميل الإذن بنجاح! تم استخراج ${items.length} صنف.`);
+                    event.target.value = '';
+                    searchDocPages();
+                } catch (err) {
+                    console.error(err);
+                    showNotification("حدث خطأ أثناء قراءة الملف، تأكد من أنه بصيغة Excel صالحة.");
+                    docFileLoaded = false;
+                    renderDocStatus();
+                }
             };
-            reader.readAsDataURL(file);
+            reader.readAsArrayBuffer(file);
         }
 
-        function removeDocPage(id) {
-            docPages = docPages.filter(p => p.id !== id);
-            renderDocPagesStatus();
-            renderDocPagesList();
-            searchDocPages();
-        }
-
-        function renderDocPagesStatus() {
+        function renderDocStatus() {
             const statusEl = document.getElementById('docPagesStatus');
             const searchGroup = document.getElementById('docSearchGroup');
             if (!statusEl) return;
-            if (docPages.length === 0) {
+            if (!docFileLoaded || docItems.length === 0) {
                 statusEl.innerHTML = '';
-                searchGroup.style.display = 'none';
+                if (searchGroup) searchGroup.style.display = 'none';
                 return;
             }
-            const doneCount = docPages.filter(p => p.ocrStatus === 'done').length;
-            const pendingCount = docPages.filter(p => p.ocrStatus === 'pending').length;
-            const errorCount = docPages.filter(p => p.ocrStatus === 'error').length;
-
-            let html = '';
-            if (pendingCount > 0) {
-                html = `<div class="alert-banner yellow">⏳ جاري تحليل ${pendingCount} صفحة... (${doneCount} من ${docPages.length} جاهزة)</div>`;
-            } else if (errorCount > 0) {
-                html = `<div class="alert-banner orange">✅ ${doneCount} صفحة جاهزة للبحث | ⚠️ ${errorCount} صفحة تعذرت قراءتها (لسه ممكن تشوفها بعينك بالتكبير)</div>`;
-            } else {
-                html = `<div class="alert-banner green" style="background-color: var(--success-bg); border-color: var(--success-border); color: #065f46;">✅ كل الصفحات (${doneCount}) جاهزة للبحث</div>`;
-            }
-            statusEl.innerHTML = html;
-            searchGroup.style.display = docPages.length > 0 ? 'block' : 'none';
-        }
-
-        // نسب المواقع التقريبية لأعمدة (م، الباركود، اسم الصنف) بالنسبة لعرض الصورة الكاملة
-        // مبنية على تحليل شكل نموذج إذن الصرف الثابت. لو الصورة ملتقطة بزاوية أو تأطير مختلف شوية
-        // بيفضل في هامش تسامح كافي لأن كل عمود بيتقرأ لوحده مش بالاعتماد على حدود دقيقة جداً.
-        const DOC_COLUMNS = {
-            mCol:       { xStart: 0.900, xEnd: 1.000 }, // عمود "م" (الترقيم) - أقصى اليمين (بهامش أمان أوسع)
-            barcodeCol: { xStart: 0.660, xEnd: 0.870 }, // عمود الباركود
-            nameCol:    { xStart: 0.170, xEnd: 0.670 }  // عمود اسم الصنف
-        };
-        // نطاق الجدول رأسياً (فوق العنوان وتحت آخر صف) - هامش آمن يشمل كل الجدول تقريباً
-        const DOC_TABLE_Y = { yStart: 0.12, yEnd: 0.97 };
-
-        // تحديد حدود الورقة الفعلية داخل الصورة الملتقطة بالكاميرا (لأن الصورة غالباً بتشمل خلفية/طاولة حوالين الورقة).
-        // نسب الأعمدة الثابتة في DOC_COLUMNS مبنية على افتراض إن الورقة تملأ الصورة بالكامل، فلو في هامش خلفية حوالين
-        // الورقة (زي طاولة أو أرضية ظاهرة في الصورة)، لازم نلاقي حدود الورقة البيضاء الحقيقية ونقص عليها الصورة أولاً
-        // قبل ما نطبق نسب الأعمدة، وإلا هتتقرأ أعمدة غلط تماماً وتظهر نتائج بحث عشوائية.
-        function detectPaperBounds(ctx, width, height) {
-            const imgData = ctx.getImageData(0, 0, width, height).data;
-            // نحسب لكل صف ولكل عمود نسبة البكسلات اللي شكلها "ورقة" (فاتحة ومحايدة اللون مش لون خلفية ملون)
-            const colPaperCount = new Array(width).fill(0);
-            const rowPaperCount = new Array(height).fill(0);
-            // نعمل sampling كل 2 بكسل تسريعاً للأداء مع صور الكاميرا الكبيرة
-            const step = 2;
-            for (let y = 0; y < height; y += step) {
-                for (let x = 0; x < width; x += step) {
-                    const idx = (y * width + x) * 4;
-                    const r = imgData[idx], g = imgData[idx + 1], b = imgData[idx + 2];
-                    const brightness = (r + g + b) / 3;
-                    const isPaper = brightness > 120 &&
-                        Math.abs(r - g) < 40 && Math.abs(g - b) < 40 && Math.abs(r - b) < 40;
-                    if (isPaper) {
-                        colPaperCount[x] += 1;
-                        rowPaperCount[y] += 1;
-                    }
-                }
-            }
-            const colSamples = Math.ceil(height / step);
-            const rowSamples = Math.ceil(width / step);
-            const colThreshold = colSamples * 0.5;
-            const rowThreshold = rowSamples * 0.5;
-            let xStartPx = 0, xEndPx = width - 1, yStartPx = 0, yEndPx = height - 1;
-            for (let x = 0; x < width; x++) { if (colPaperCount[x] > colThreshold) { xStartPx = x; break; } }
-            for (let x = width - 1; x >= 0; x--) { if (colPaperCount[x] > colThreshold) { xEndPx = x; break; } }
-            for (let y = 0; y < height; y++) { if (rowPaperCount[y] > rowThreshold) { yStartPx = y; break; } }
-            for (let y = height - 1; y >= 0; y--) { if (rowPaperCount[y] > rowThreshold) { yEndPx = y; break; } }
-            // حماية: لو الاكتشاف فشل أو رجع حدود غير منطقية (ورقة أصغر من نص الصورة)، نستخدم الصورة كاملة كما هي
-            const detectedW = xEndPx - xStartPx;
-            const detectedH = yEndPx - yStartPx;
-            if (detectedW < width * 0.4 || detectedH < height * 0.4) {
-                return { xStart: 0, xEnd: width, yStart: 0, yEnd: height };
-            }
-            return { xStart: xStartPx, xEnd: xEndPx, yStart: yStartPx, yEnd: yEndPx };
-        }
-
-        // نرجع نسخة من الصورة مقصوصة على حدود الورقة فقط (بدون أي خلفية/طاولة حوالينها)، مع كاش داخل بيانات الصفحة
-        // عشان الاكتشاف يحصل مرة واحدة بس لكل صفحة مش مرة لكل عمود.
-        function getPaperCroppedImage(page) {
-            if (page.paperCroppedDataUrl) {
-                return Promise.resolve(page.paperCroppedDataUrl);
-            }
-            return new Promise((resolve) => {
-                const img = new Image();
-                img.onload = function() {
-                    const canvas = document.createElement('canvas');
-                    canvas.width = img.naturalWidth;
-                    canvas.height = img.naturalHeight;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0);
-                    const bounds = detectPaperBounds(ctx, canvas.width, canvas.height);
-                    const outCanvas = document.createElement('canvas');
-                    outCanvas.width = bounds.xEnd - bounds.xStart;
-                    outCanvas.height = bounds.yEnd - bounds.yStart;
-                    const outCtx = outCanvas.getContext('2d');
-                    outCtx.drawImage(img, bounds.xStart, bounds.yStart, outCanvas.width, outCanvas.height, 0, 0, outCanvas.width, outCanvas.height);
-                    page.paperCroppedDataUrl = outCanvas.toDataURL('image/png');
-                    resolve(page.paperCroppedDataUrl);
-                };
-                img.src = page.imageDataUrl;
-            });
-        }
-
-        function cropImageRegion(imageDataUrl, xStart, xEnd, yStart, yEnd) {
-            return new Promise((resolve) => {
-                const img = new Image();
-                img.onload = function() {
-                    const sx = img.naturalWidth * xStart;
-                    const sy = img.naturalHeight * yStart;
-                    const sw = img.naturalWidth * (xEnd - xStart);
-                    const sh = img.naturalHeight * (yEnd - yStart);
-                    const canvas = document.createElement('canvas');
-                    canvas.width = sw;
-                    canvas.height = sh;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
-                    resolve({ dataUrl: canvas.toDataURL('image/png'), width: sw, height: sh });
-                };
-                img.src = imageDataUrl;
-            });
-        }
-
-        // تجميع خطوط النص القادمة من OCR في صفوف بناءً على تقارب مركز الارتفاع (y) بينها
-        function groupLinesIntoRows(lines) {
-            const rows = [];
-            const sorted = [...lines].sort((a, b) => a.yCenter - b.yCenter);
-            sorted.forEach(line => {
-                let matched = rows.find(r => Math.abs(r.yCenter - line.yCenter) < r.height * 0.6);
-                if (matched) {
-                    matched.text += (matched.text ? ' ' : '') + line.text;
-                    matched.yCenter = (matched.yCenter + line.yCenter) / 2;
-                    matched.height = Math.max(matched.height, line.height);
-                } else {
-                    rows.push({ text: line.text, yCenter: line.yCenter, height: line.height });
-                }
-            });
-            return rows;
-        }
-
-        async function ocrColumnToRows(worker, imageDataUrl, colDef, tableY, digitsOnly) {
-            const crop = await cropImageRegion(imageDataUrl, colDef.xStart, colDef.xEnd, tableY.yStart, tableY.yEnd);
-            if (digitsOnly) {
-                await worker.setParameters({ tessedit_char_whitelist: '0123456789' });
-            } else {
-                await worker.setParameters({ tessedit_char_whitelist: '' });
-            }
-            const result = await worker.recognize(crop.dataUrl);
-            const lines = [];
-            if (result.data && result.data.lines) {
-                result.data.lines.forEach(l => {
-                    const text = (l.text || '').trim();
-                    if (text.length === 0) return;
-                    const yCenter = (l.bbox.y0 + l.bbox.y1) / 2;
-                    const height = l.bbox.y1 - l.bbox.y0;
-                    lines.push({ text, yCenter, height });
-                });
-            }
-            const rows = groupLinesIntoRows(lines);
-            return { rows, cropHeight: crop.height, cropWidth: crop.width };
-        }
-
-        async function runOcrOnPage(page) {
-            try {
-                const worker = await getTesseractWorker();
-
-                // نقص الصورة على حدود الورقة الفعلية أولاً (نتخلص من أي خلفية/طاولة ظاهرة حوالين الورقة في صورة الكاميرا)
-                // عشان نسب الأعمدة الثابتة (DOC_COLUMNS) تتظبط صح على الجدول الحقيقي مش على الصورة الخام.
-                const paperImageUrl = await getPaperCroppedImage(page);
-
-                const mResult = await ocrColumnToRows(worker, paperImageUrl, DOC_COLUMNS.mCol, DOC_TABLE_Y, true);
-                const barcodeResult = await ocrColumnToRows(worker, paperImageUrl, DOC_COLUMNS.barcodeCol, DOC_TABLE_Y, true);
-                const nameResult = await ocrColumnToRows(worker, paperImageUrl, DOC_COLUMNS.nameCol, DOC_TABLE_Y, false);
-                // نرجع الإعدادات للوضع العام بعد الانتهاء
-                await worker.setParameters({ tessedit_char_whitelist: '' });
-
-                // نطابق الصفوف الثلاثة مع بعض بناءً على أقرب مركز ارتفاع نسبي (كنسبة من ارتفاع كل عمود)
-                const cropH = Math.max(mResult.cropHeight, barcodeResult.cropHeight, nameResult.cropHeight);
-                const normalize = (rows, h) => rows.map(r => ({ ...r, yNorm: r.yCenter / h }));
-                const mRows = normalize(mResult.rows, mResult.cropHeight);
-                const barcodeRows = normalize(barcodeResult.rows, barcodeResult.cropHeight);
-                const nameRows = normalize(nameResult.rows, nameResult.cropHeight);
-
-                const combinedRows = [];
-                barcodeRows.forEach(bRow => {
-                    // نلاقي أقرب صف كود "م" وأقرب صف اسم صنف بنفس الارتفاع النسبي تقريباً
-                    let closestM = null, closestMDist = Infinity;
-                    mRows.forEach(mRow => {
-                        const dist = Math.abs(mRow.yNorm - bRow.yNorm);
-                        if (dist < closestMDist) { closestMDist = dist; closestM = mRow; }
-                    });
-                    let closestName = null, closestNameDist = Infinity;
-                    nameRows.forEach(nRow => {
-                        const dist = Math.abs(nRow.yNorm - bRow.yNorm);
-                        if (dist < closestNameDist) { closestNameDist = dist; closestName = nRow; }
-                    });
-
-                    const tolerance = 0.03; // هامش تسامح نسبي لمطابقة الصفوف
-                    combinedRows.push({
-                        barcode: bRow.text.replace(/\s+/g, ''),
-                        mNumber: (closestM && closestMDist < tolerance) ? closestM.text.replace(/\D/g, '') : '',
-                        itemName: (closestName && closestNameDist < tolerance) ? closestName.text : '',
-                        yNorm: bRow.yNorm
-                    });
-                });
-
-                page.ocrRows = combinedRows;
-                page.ocrStatus = 'done';
-            } catch (err) {
-                console.error('OCR error on page', page.id, err);
-                page.ocrStatus = 'error';
-            }
-            renderDocPagesStatus();
-            searchDocPages();
-        }
-
-        function renderDocPagesList() {
-            const list = document.getElementById('docPagesList');
-            if (!list) return;
-            if (docPages.length === 0) {
-                list.innerHTML = '';
-                return;
-            }
-            let html = '<div class="samples-header" style="margin-top: 20px;"><label>الصفحات المضافة</label></div>';
-            docPages.forEach((page, idx) => {
-                const statusIcon = page.ocrStatus === 'done' ? '✅' : (page.ocrStatus === 'error' ? '⚠️' : '⏳');
-                html += `
-                    <div class="vac-item-card" style="padding: 10px; display:flex; align-items:center; gap:12px;">
-                        <img src="${page.imageDataUrl}" style="width:60px; height:60px; object-fit:cover; border-radius:8px; border:1px solid #e2e8f0; cursor:pointer;" onclick="openDocImageModal('${page.id}')">
-                        <div style="flex:1;">
-                            <div style="font-weight:700; font-size:0.9rem;">صفحة ${idx + 1} ${statusIcon}</div>
-                            <div style="font-size:0.8rem; color:#64748b;">دوس على الصورة للتكبير</div>
-                        </div>
-                        <button class="vac-remove-btn" onclick="removeDocPage('${page.id}')">🗑</button>
-                    </div>
-                `;
-            });
-            list.innerHTML = html;
+            statusEl.innerHTML = `<div class="alert-banner green" style="background-color: var(--success-bg); border-color: var(--success-border); color: #065f46;">✅ تم تحميل الإذن (${docItems.length} صنف) وجاهز للبحث</div>`;
+            if (searchGroup) searchGroup.style.display = 'block';
         }
 
         function searchDocPages() {
-            const input = document.getElementById('docSearchInput').value.trim();
+            const rawInput = document.getElementById('docSearchInput').value.trim();
             const resultsDiv = document.getElementById('docSearchResults');
             if (!resultsDiv) return;
-            if (input.length === 0) {
+            if (rawInput.length === 0) {
                 resultsDiv.innerHTML = '';
                 return;
             }
-            const lowerInput = input.toLowerCase();
+            if (!docFileLoaded || docItems.length === 0) {
+                resultsDiv.innerHTML = `<div class="alert-banner red">يرجى رفع ملف إذن الصرف أولاً!</div>`;
+                return;
+            }
+            // نطابق فقط لو الباركود بينتهي بنفس الأرقام المكتوبة بالظبط (مش أي مكان فيه، بداية أو نص الباركود)
+            const searchDigits = rawInput.replace(/\D/g, '');
             let matches = [];
-            docPages.forEach((page, pageIdx) => {
-                if (page.ocrStatus !== 'done' || !page.ocrRows) return;
-                page.ocrRows.forEach(row => {
-                    const inBarcode = row.barcode && row.barcode.includes(lowerInput);
-                    const inName = row.itemName && row.itemName.toLowerCase().includes(lowerInput);
-                    if (inBarcode || inName) {
-                        matches.push({ pageId: page.id, pageIndex: pageIdx, row });
-                    }
-                });
-            });
+            if (searchDigits.length > 0) {
+                matches = docItems.filter(it => it.barcode.endsWith(searchDigits));
+            }
 
             if (matches.length === 0) {
-                const anyPending = docPages.some(p => p.ocrStatus === 'pending');
-                if (anyPending) {
-                    resultsDiv.innerHTML = `<div class="alert-banner yellow">⏳ لسه في صفحات بتتحلل، جرب تاني بعد شوية أو دور بعينك في الصفحات تحت.</div>`;
-                } else {
-                    resultsDiv.innerHTML = `<div class="alert-banner red">لا توجد نتائج مطابقة. القراءة الآلية تقريبية - جرب تدور بعينك في الصفحات تحت باستخدام التكبير.</div>`;
-                }
+                resultsDiv.innerHTML = `<div class="alert-banner red">لا يوجد صنف بالإذن باركوده منتهي بالأرقام دي.</div>`;
                 return;
             }
 
-            let html = `<div class="alert-banner green" style="background-color: var(--success-bg); border-color: var(--success-border); color: #065f46;">تم العثور على ${matches.length} تطابق</div>`;
-            matches.forEach(m => {
+            let html = `<div class="alert-banner green" style="background-color: var(--success-bg); border-color: var(--success-border); color: #065f46;">تم العثور على ${matches.length} صنف مطابق</div>`;
+            matches.forEach(it => {
+                const qtyText = (it.actualQty !== '' && it.actualQty !== undefined && it.actualQty !== null) ? it.actualQty : '-';
                 html += `
-                    <div class="result-box blue" style="cursor:pointer; margin-top: 10px;" onclick="openDocImageModal('${m.pageId}', ${m.row.yNorm})">
-                        <div class="result-box-label">صفحة ${m.pageIndex + 1} ${m.row.mNumber ? '| رقم الصنف بالإذن: ' + m.row.mNumber : ''}</div>
-                        <div class="result-box-value" style="font-size: 1.05rem;">${m.row.itemName || '(اسم الصنف غير واضح)'}</div>
-                        <div style="font-size: 0.9rem; color: #475569; margin-top:4px; direction:ltr; text-align:right;">${m.row.barcode || ''}</div>
-                        <div style="font-size: 0.8rem; color: #64748b; margin-top:4px;">دوس هنا لفتح الصورة مكبّرة على مكان هذا الصف</div>
+                    <div class="result-box blue" style="margin-top: 10px;">
+                        <div class="result-box-label">رقم الصنف بالإذن (م): <b style="font-size:1.1rem;">${it.mNumber}</b></div>
+                        <div class="result-box-value" style="font-size: 1.05rem;">${it.itemName || '(اسم الصنف غير متوفر)'}</div>
+                        <div style="font-size: 0.9rem; color: #475569; margin-top:4px; direction:ltr; text-align:right;">الباركود: ${it.barcode}</div>
+                        <div style="font-size: 0.9rem; color: #475569; margin-top:4px;">الكمية الفعلية: <b>${qtyText}</b></div>
                     </div>
                 `;
             });
             resultsDiv.innerHTML = html;
-        }
-
-        function openDocImageModal(pageId, yNorm) {
-            const page = docPages.find(p => p.id === pageId);
-            if (!page) return;
-            const modal = document.getElementById('docImageModal');
-            const img = document.getElementById('docImageModalImg');
-            const title = document.getElementById('docImageModalTitle');
-            const body = document.getElementById('docImageModalBody');
-            const pageIdx = docPages.indexOf(page);
-
-            title.innerText = 'صفحة ' + (pageIdx + 1);
-            // نعرض النسخة المقصوصة على حدود الورقة (لو جاهزة) عشان التمرير التلقائي لمكان الصف يتظبط صح على yNorm
-            // المحسوب أصلاً بالنسبة للورقة المقصوصة مش الصورة الخام بخلفيتها.
-            img.src = page.paperCroppedDataUrl || page.imageDataUrl;
-            modal.style.display = 'flex';
-
-            // نكبّر الصورة ونعمل تمرير تلقائي لمكان الصف لو متوفر ارتفاعه النسبي
-            img.onload = function() {
-                const naturalWidth = img.naturalWidth;
-                const naturalHeight = img.naturalHeight;
-                const displayScale = 2.2; // مستوى تكبير مبدئي يسهّل قراءة الأكواد الصغيرة
-                img.style.width = (naturalWidth * displayScale) + 'px';
-
-                if (typeof yNorm === 'number' && !isNaN(yNorm)) {
-                    // yNorm محسوب بالنسبة لمنطقة الجدول (DOC_TABLE_Y)، نحوله لموضع مطلق في الصورة الكاملة
-                    const absoluteY = (DOC_TABLE_Y.yStart + yNorm * (DOC_TABLE_Y.yEnd - DOC_TABLE_Y.yStart)) * naturalHeight;
-                    setTimeout(() => {
-                        const scrollX = 0;
-                        const scrollY = (absoluteY * displayScale) - (body.clientHeight / 3);
-                        body.scrollTo({ left: Math.max(0, scrollX), top: Math.max(0, scrollY), behavior: 'smooth' });
-                    }, 100);
-                } else {
-                    body.scrollTo({ left: 0, top: 0 });
-                }
-            };
-        }
-
-        function closeDocImageModal() {
-            document.getElementById('docImageModal').style.display = 'none';
         }
 
         // --- Navigation (Swipe to go back via History API) ---
