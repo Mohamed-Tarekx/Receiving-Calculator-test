@@ -1363,6 +1363,9 @@
 
             <div id="docPagesStatus"></div>
 
+            <button id="docPendingToggleBtn" onclick="toggleDocPendingList()" style="display:none; width:100%; padding:12px; margin-bottom:16px; border-radius:10px; border:1px solid #cbd5e1; background-color:#f8fafc; color:#334155; font-weight:bold; font-size:0.9rem; cursor:pointer;">📋 عرض الأصناف الناقصة والمتجاوزة</button>
+            <div id="docPendingListContainer" style="display:none;"></div>
+
             <div class="form-group" id="docSearchGroup" style="display:none;">
                 <label>بحث بآخر أرقام من الباركود</label>
                 <input type="text" id="docSearchInput" inputmode="numeric" placeholder="مثال: 150 (يبحث عن باركود ينتهي بـ 150)" oninput="searchDocPages()">
@@ -1378,6 +1381,8 @@
                     <li>لو أكتر من صنف نهايته نفس الأرقام، هيظهرلك كل الأصناف المطابقة مع رقمها بعمود "م" واسمها وكميتها الفعلية.</li>
                     <li>لو استلمت الصنف بكامل كميته، دوس زرار "✓ استلمنا الكمية كاملة" - هيفضل متعلّم عليه طول الإذن حتى لو دورت عليه تاني أو قفلت البرنامج.</li>
                     <li>لو لقيت جزء بس من الكمية دلوقتي، اكتب العدد في خانة "تسجيل كمية جزئية" ودوس "إضافة" - كل مرة تضيف رقم بيتجمع على اللي قبله ويتسجل الهيستوري (مثلاً 2 + 3 = 5)، وتقدر تدوس "تعديل" في أي وقت عشان تمسح الهيستوري وتكتب رقم جديد من الأول.</li>
+                    <li>لو حاولت تضيف كمية جزئية هتخلي الإجمالي المسجل أكبر من الكمية الفعلية بالإذن، البرنامج هيحذرك قبل ما يكمل، ولو أكدت هيتلوّن الصنف باللون البرتقالي عشان يبان إنه محتاج مراجعة.</li>
+                    <li>دوس زرار "📋 عرض الأصناف الناقصة والمتجاوزة" في أي وقت عشان تشوف كل الأصناف اللي لسه ماخدتش كامل كميتها، وكمان الأصناف اللي اتسجل لها كمية أكبر من المفروض.</li>
                     <li>البيانات والتقدم بتتحفظ أوتوماتيك على الجهاز. لو عايز تقفل الإذن الحالي وتبدأ واحد جديد، دوس زرار "✕ إلغاء الإذن" اللي بيظهر فوق.</li>
                 </ol>
             </div>
@@ -2495,8 +2500,10 @@
                     docItems = items;
                     docProgress = {};
                     docFileLoaded = true;
+                    docPendingListVisible = false;
                     saveDocSession();
                     renderDocStatus();
+                    renderDocPendingList();
                     showNotification(`تم تحميل الإذن بنجاح! تم استخراج ${items.length} صنف.`);
                     event.target.value = '';
                     searchDocPages();
@@ -2538,6 +2545,7 @@
             docItems = [];
             docProgress = {};
             docFileLoaded = false;
+            docPendingListVisible = false;
             localStorage.removeItem(DOC_SESSION_KEY);
             const searchInput = document.getElementById('docSearchInput');
             if (searchInput) searchInput.value = '';
@@ -2546,6 +2554,7 @@
             const fileInput = document.getElementById('docExcelFile');
             if (fileInput) fileInput.value = '';
             renderDocStatus();
+            renderDocPendingList();
             showNotification('تم إلغاء الإذن الحالي. تقدر ترفع إذن جديد دلوقتي.');
         }
 
@@ -2575,22 +2584,44 @@
 
             let html = `<div class="alert-banner green" style="background-color: var(--success-bg); border-color: var(--success-border); color: #065f46;">تم العثور على ${matches.length} صنف مطابق</div>`;
             matches.forEach(it => {
-                const qtyText = (it.actualQty !== '' && it.actualQty !== undefined && it.actualQty !== null) ? it.actualQty : '-';
-                const prog = getProgressFor(it.mNumber);
-                const checkedClass = prog.checked ? 'result-box green' : 'result-box blue';
-                const historyText = prog.partialHistory && prog.partialHistory.length > 0
-                    ? prog.partialHistory.join(' + ') + ' = ' + prog.partialQty
-                    : '';
-                html += `
-                    <div class="${checkedClass}" style="margin-top: 10px;" id="docItemBox_${it.mNumber}">
+                html += renderDocItemBox(it);
+            });
+            resultsDiv.innerHTML = html;
+        }
+
+        // نحدد لون/حالة عرض الصنف بناءً على تقدمه: أخضر = مستلم كامل، برتقالي = فيه تجاوز للكمية المسجلة عن
+        // الكمية الفعلية بالإذن (يحتاج مراجعة)، أزرق = لسه تحت المتابعة (فاضي أو جزئي عادي).
+        function getDocItemStatus(it, prog) {
+            const actualQtyNum = parseFloat(it.actualQty);
+            const hasValidActualQty = !isNaN(actualQtyNum);
+            const isOver = hasValidActualQty && prog.partialQty > actualQtyNum;
+            if (isOver) return 'over';
+            if (prog.checked) return 'checked';
+            return 'normal';
+        }
+
+        function renderDocItemBox(it) {
+            const qtyText = (it.actualQty !== '' && it.actualQty !== undefined && it.actualQty !== null) ? it.actualQty : '-';
+            const prog = getProgressFor(it.mNumber);
+            const status = getDocItemStatus(it, prog);
+            const boxClass = status === 'checked' ? 'result-box green' : (status === 'over' ? 'result-box orange' : 'result-box blue');
+            const historyText = prog.partialHistory && prog.partialHistory.length > 0
+                ? prog.partialHistory.join(' + ') + ' = ' + prog.partialQty
+                : '';
+            const overWarningHtml = status === 'over'
+                ? `<div class="alert-banner orange" style="margin-top:8px;">⚠️ الكمية المسجلة (${prog.partialQty}) أكبر من الكمية الفعلية بالإذن (${qtyText})! يُرجى المراجعة.</div>`
+                : '';
+            return `
+                    <div class="${boxClass}" style="margin-top: 10px;" id="docItemBox_${it.mNumber}">
                         <div class="result-box-label">رقم الصنف بالإذن (م): <b style="font-size:1.1rem;">${it.mNumber}</b></div>
                         <div class="result-box-value" style="font-size: 1.05rem;">${it.itemName || '(اسم الصنف غير متوفر)'}</div>
                         <div style="font-size: 0.9rem; color: #475569; margin-top:4px; direction:ltr; text-align:right;">الباركود: ${it.barcode}</div>
                         <div style="font-size: 0.9rem; color: #475569; margin-top:4px;">الكمية الفعلية بالإذن: <b>${qtyText}</b></div>
+                        ${overWarningHtml}
 
                         <div style="margin-top:12px; padding-top:12px; border-top:1px dashed #cbd5e1;">
-                            <button onclick="toggleDocChecked('${it.mNumber}')" style="width:100%; padding:12px; border-radius:8px; border:none; font-weight:bold; font-size:0.95rem; cursor:pointer; ${prog.checked ? 'background-color: var(--success); color:white;' : 'background-color:#e2e8f0; color:#334155;'}">
-                                ${prog.checked ? '✓ تم استلام الكمية كاملة' : '✓ استلمنا الكمية كاملة'}
+                            <button onclick="toggleDocChecked('${it.mNumber}')" style="width:100%; padding:12px; border-radius:8px; border:none; font-weight:bold; font-size:0.95rem; cursor:pointer; ${status === 'checked' ? 'background-color: var(--success); color:white;' : 'background-color:#e2e8f0; color:#334155;'}">
+                                ${status === 'checked' ? '✓ تم استلام الكمية كاملة' : '✓ استلمنا الكمية كاملة'}
                             </button>
                         </div>
 
@@ -2607,8 +2638,6 @@
                         </div>
                     </div>
                 `;
-            });
-            resultsDiv.innerHTML = html;
         }
 
         function toggleDocChecked(mNumber) {
@@ -2617,6 +2646,7 @@
             saveDocSession();
             renderDocStatus();
             searchDocPages();
+            renderDocPendingList();
         }
 
         function addDocPartialQty(mNumber) {
@@ -2628,12 +2658,20 @@
                 return;
             }
             const prog = getProgressFor(mNumber);
+            const it = docItems.find(x => x.mNumber === mNumber);
+            const actualQtyNum = it ? parseFloat(it.actualQty) : NaN;
+            const newTotal = (prog.partialQty || 0) + val;
+            if (it && !isNaN(actualQtyNum) && newTotal > actualQtyNum) {
+                const proceed = window.confirm(`تنبيه: الكمية اللي هتضافها هتخلي إجمالي المسجل (${newTotal}) أكبر من الكمية الفعلية بالإذن (${actualQtyNum}) لنفس الصنف!\n\nهل أنت متأكد إنك عايز تكمل بنفس الرقم؟`);
+                if (!proceed) return;
+            }
             if (!prog.partialHistory) prog.partialHistory = [];
             prog.partialHistory.push(val);
-            prog.partialQty = (prog.partialQty || 0) + val;
+            prog.partialQty = newTotal;
             saveDocSession();
             input.value = '';
             searchDocPages();
+            renderDocPendingList();
         }
 
         function resetDocPartialQty(mNumber) {
@@ -2644,12 +2682,77 @@
             prog.partialHistory = [];
             saveDocSession();
             searchDocPages();
+            renderDocPendingList();
+        }
+
+        // --- عرض الأصناف الناقصة / اللي محتاجة مراجعة ---
+        // "ناقصة": مش متعلّم عليها كـ"مكتملة" وكميتها المسجلة (لو موجودة) أقل من الكمية الفعلية بالإذن.
+        // "تجاوز": كميتها المسجلة أكبر من الكمية الفعلية بالإذن (محتاجة مراجعة بغض النظر عن حالة "مكتملة").
+        let docPendingListVisible = false;
+
+        function toggleDocPendingList() {
+            docPendingListVisible = !docPendingListVisible;
+            renderDocPendingList();
+        }
+
+        function renderDocPendingList() {
+            const container = document.getElementById('docPendingListContainer');
+            const btn = document.getElementById('docPendingToggleBtn');
+            if (!container) return;
+            if (!docFileLoaded || docItems.length === 0) {
+                container.innerHTML = '';
+                container.style.display = 'none';
+                if (btn) btn.style.display = 'none';
+                return;
+            }
+            if (btn) btn.style.display = 'block';
+            if (!docPendingListVisible) {
+                container.style.display = 'none';
+                container.innerHTML = '';
+                if (btn) btn.innerText = '📋 عرض الأصناف الناقصة والمتجاوزة';
+                return;
+            }
+            if (btn) btn.innerText = '📋 إخفاء الأصناف الناقصة والمتجاوزة';
+
+            const pendingItems = [];
+            const overItems = [];
+            docItems.forEach(it => {
+                const prog = getProgressFor(it.mNumber);
+                const status = getDocItemStatus(it, prog);
+                if (status === 'over') {
+                    overItems.push(it);
+                } else if (status !== 'checked') {
+                    // ناقص لو لسه معندوش أي كمية مسجلة، أو عنده كمية جزئية لسه أقل من الفعلية
+                    const actualQtyNum = parseFloat(it.actualQty);
+                    const hasValidActualQty = !isNaN(actualQtyNum);
+                    if (!hasValidActualQty || prog.partialQty < actualQtyNum) {
+                        pendingItems.push(it);
+                    }
+                }
+            });
+
+            let html = '';
+            if (overItems.length === 0 && pendingItems.length === 0) {
+                html = `<div class="alert-banner green" style="background-color: var(--success-bg); border-color: var(--success-border); color: #065f46; margin-top:12px;">🎉 كل الأصناف مكتملة ومفيش أي تجاوز في الكميات!</div>`;
+            } else {
+                if (overItems.length > 0) {
+                    html += `<div class="alert-banner orange" style="margin-top:12px;">⚠️ يوجد ${overItems.length} صنف كميته المسجلة أكبر من الكمية الفعلية بالإذن (يحتاج مراجعة):</div>`;
+                    overItems.forEach(it => { html += renderDocItemBox(it); });
+                }
+                if (pendingItems.length > 0) {
+                    html += `<div class="alert-banner yellow" style="margin-top:12px;">⏳ يوجد ${pendingItems.length} صنف لسه ناقص أو مش متعلّم عليه بالكامل:</div>`;
+                    pendingItems.forEach(it => { html += renderDocItemBox(it); });
+                }
+            }
+            container.innerHTML = html;
+            container.style.display = 'block';
         }
 
         // استرجاع تقدم إذن سابق (لو موجود) بمجرد فتح التطبيق، عشان يفضل محفوظ حتى لو المستخدم قفل المتصفح
         window.addEventListener('DOMContentLoaded', function() {
             const restored = loadDocSession();
             renderDocStatus();
+            renderDocPendingList();
         });
 
         // --- Navigation (Swipe to go back via History API) ---
