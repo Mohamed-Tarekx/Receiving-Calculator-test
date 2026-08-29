@@ -253,6 +253,40 @@
             font-weight: 600;
         }
 
+        /* حاوية خانة البحث اللي معاها زرار مسح سريع (×) - عشان تسريع إدخال الأرقام بأجهزة PDA */
+        .search-with-clear {
+            position: relative;
+        }
+        .search-with-clear input {
+            padding-left: 44px; /* مساحة لزرار المسح (الجهة اليسار لأن اتجاه الصفحة RTL) */
+        }
+        .search-clear-btn {
+            position: absolute;
+            left: 6px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 34px;
+            height: 34px;
+            border: none;
+            border-radius: 50%;
+            background-color: #e2e8f0;
+            color: #475569;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+        }
+        .search-clear-btn.visible {
+            display: flex;
+        }
+        .search-clear-btn:active {
+            background-color: var(--primary);
+            color: white;
+        }
+
         input:focus {
             border-color: var(--primary);
             box-shadow: 0 0 0 3px rgba(244, 129, 32, 0.15);
@@ -781,7 +815,10 @@
 
             <div class="form-group">
                 <label>بحث برقم الكود أو اسم الشركة</label>
-                <input type="text" id="companySearchInput" placeholder="مثال: 121 أو الصقر" oninput="searchCompany()">
+                <div class="search-with-clear">
+                    <input type="text" id="companySearchInput" placeholder="مثال: 121 أو الصقر" oninput="searchCompany(); toggleClearBtn('companySearchInput','companySearchClearBtn');">
+                    <button type="button" id="companySearchClearBtn" class="search-clear-btn" onclick="clearSearchInput('companySearchInput','companySearchClearBtn', searchCompany)">✕</button>
+                </div>
             </div>
 
             <div class="results-section" id="checkResults" style="display: none;">
@@ -1277,7 +1314,10 @@
 
             <div class="form-group">
                 <label>بحث بالباركود أو كود المورد</label>
-                <input type="text" id="taresSearchInput" placeholder="مثال: 2300011000005 أو 553" oninput="searchTares()">
+                <div class="search-with-clear">
+                    <input type="text" id="taresSearchInput" placeholder="مثال: 2300011000005 أو 553" oninput="searchTares(); toggleClearBtn('taresSearchInput','taresSearchClearBtn');">
+                    <button type="button" id="taresSearchClearBtn" class="search-clear-btn" onclick="clearSearchInput('taresSearchInput','taresSearchClearBtn', searchTares)">✕</button>
+                </div>
             </div>
 
             <div class="results-section" id="taresResults" style="display: none;">
@@ -1368,7 +1408,10 @@
 
             <div class="form-group" id="docSearchGroup" style="display:none;">
                 <label>بحث بآخر أرقام من الباركود</label>
-                <input type="text" id="docSearchInput" inputmode="numeric" placeholder="مثال: 150 (يبحث عن باركود ينتهي بـ 150)" oninput="searchDocPages()">
+                <div class="search-with-clear">
+                    <input type="text" id="docSearchInput" inputmode="numeric" placeholder="مثال: 150 (يبحث عن باركود ينتهي بـ 150)" oninput="searchDocPages(); toggleClearBtn('docSearchInput','docSearchClearBtn');">
+                    <button type="button" id="docSearchClearBtn" class="search-clear-btn" onclick="clearSearchInput('docSearchInput','docSearchClearBtn', searchDocPages)">✕</button>
+                </div>
             </div>
 
             <div id="docSearchResults"></div>
@@ -1472,13 +1515,39 @@
         }
         document.addEventListener('contextmenu', e => e.preventDefault());
 
+        let appToastTimer = null;
         function showNotification(message) {
             const toast = document.getElementById('appToast');
+            if (!toast) return;
+            // نلغي أي مؤقت سابق شغال قبل ما نبدأ واحد جديد، عشان لو الإشعارات جت ورا بعض بسرعة
+            // (أو لو الجهاز/المتصفح أخّر تنفيذ المؤقت القديم) الرسالة القديمة متفضلش عالقة على الشاشة للأبد.
+            if (appToastTimer) {
+                clearTimeout(appToastTimer);
+                appToastTimer = null;
+            }
             toast.innerText = message;
             toast.classList.add('show');
-            setTimeout(() => {
+            appToastTimer = setTimeout(() => {
                 toast.classList.remove('show');
+                appToastTimer = null;
             }, 3000);
+        }
+
+        // --- زرار المسح السريع (×) لخانات البحث - تسريع إدخال الأرقام بأجهزة الـ PDA ---
+        function toggleClearBtn(inputId, btnId) {
+            const input = document.getElementById(inputId);
+            const btn = document.getElementById(btnId);
+            if (!input || !btn) return;
+            btn.classList.toggle('visible', input.value.length > 0);
+        }
+
+        function clearSearchInput(inputId, btnId, callback) {
+            const input = document.getElementById(inputId);
+            if (!input) return;
+            input.value = '';
+            toggleClearBtn(inputId, btnId);
+            input.focus();
+            if (typeof callback === 'function') callback();
         }
 
         // --- Custom Date Picker Helper ---
@@ -2549,6 +2618,7 @@
             localStorage.removeItem(DOC_SESSION_KEY);
             const searchInput = document.getElementById('docSearchInput');
             if (searchInput) searchInput.value = '';
+            toggleClearBtn('docSearchInput', 'docSearchClearBtn');
             const resultsDiv = document.getElementById('docSearchResults');
             if (resultsDiv) resultsDiv.innerHTML = '';
             const fileInput = document.getElementById('docExcelFile');
@@ -2773,6 +2843,14 @@
             document.getElementById('mainHomeBtn').style.display = 'flex';
             window.scrollTo({ top: 0, behavior: 'smooth' });
             history.pushState({page: modId}, "");
+            // مزامنة ظهور زرار المسح السريع (×) مع أي نص متبقي في خانات البحث عند فتح القسم
+            syncAllSearchClearBtns();
+        }
+
+        function syncAllSearchClearBtns() {
+            toggleClearBtn('companySearchInput', 'companySearchClearBtn');
+            toggleClearBtn('taresSearchInput', 'taresSearchClearBtn');
+            toggleClearBtn('docSearchInput', 'docSearchClearBtn');
         }
 
         window.addEventListener('popstate', (e) => {
