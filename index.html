@@ -1350,12 +1350,13 @@
             <div class="module-header">
                 <button class="back-btn" onclick="goHome()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
                 <span class="module-title">بحث في إذن الصرف</span>
+                <button id="docCancelBtn" onclick="confirmCancelDocSession()" style="display:none; margin-right:auto; background:var(--danger-bg); border:1px solid var(--danger-border); color:var(--danger); border-radius:8px; padding:8px 12px; font-weight:bold; font-size:0.85rem; cursor:pointer;">✕ إلغاء الإذن</button>
             </div>
             <div class="info-box">
-                ارفع ملف إكسيل إذن الصرف (نفس التنسيق الثابت اللي بيتطبع بيه من النظام). اكتب <b>آخر أرقام من الباركود</b> في خانة البحث، والبرنامج هيطلعلك رقم الصنف (عمود م)، اسم الصنف، والكمية الفعلية لأي صنف باركوده بينتهي بنفس الأرقام اللي كتبتها بالظبط (مش أي مكان في الباركود).
+                ارفع ملف إكسيل إذن الصرف (نفس التنسيق الثابت اللي بيتطبع بيه من النظام). اكتب <b>آخر أرقام من الباركود</b> في خانة البحث، والبرنامج هيطلعلك رقم الصنف (عمود م)، اسم الصنف، والكمية الفعلية لأي صنف باركوده بينتهي بنفس الأرقام اللي كتبتها بالظبط (مش أي مكان في الباركود). تقدر تعلّم على أي صنف استلمته كامل أو تسجل كمية جزئية لقيتها دلوقتي، والتقدم ده بيتحفظ تلقائياً على الجهاز لحد ما تلغي الإذن.
             </div>
 
-            <div class="form-group" style="background: #f8fafc; padding: 16px; border-radius: 12px; border: 1px dashed #cbd5e1; margin-bottom: 24px;">
+            <div class="form-group" id="docUploadGroup" style="background: #f8fafc; padding: 16px; border-radius: 12px; border: 1px dashed #cbd5e1; margin-bottom: 24px;">
                 <label style="color: var(--primary-dark); font-size: 0.95rem; margin-bottom: 10px;">رفع ملف إذن الصرف (إكسيل)</label>
                 <input type="file" id="docExcelFile" accept=".xlsx, .xls, .csv" onchange="handleDocExcelUpload(event)" style="padding: 10px; font-size: 0.9rem; background: #fff;">
             </div>
@@ -1375,6 +1376,9 @@
                     <li>ارفع ملف إذن الصرف بصيغة إكسيل (نفس شكله المطبوع من النظام، بدون أي تعديل في ترتيب الأعمدة).</li>
                     <li>اكتب آخر أرقام من الباركود في خانة البحث (مش لازم الباركود كامل). البرنامج بيدور فقط على الأصناف اللي باركودها بينتهي بنفس الأرقام دي بالظبط، مش أي صنف باركوده فيه نفس الأرقام في أي مكان.</li>
                     <li>لو أكتر من صنف نهايته نفس الأرقام، هيظهرلك كل الأصناف المطابقة مع رقمها بعمود "م" واسمها وكميتها الفعلية.</li>
+                    <li>لو استلمت الصنف بكامل كميته، دوس زرار "✓ استلمنا الكمية كاملة" - هيفضل متعلّم عليه طول الإذن حتى لو دورت عليه تاني أو قفلت البرنامج.</li>
+                    <li>لو لقيت جزء بس من الكمية دلوقتي، اكتب العدد في خانة "تسجيل كمية جزئية" ودوس "إضافة" - كل مرة تضيف رقم بيتجمع على اللي قبله ويتسجل الهيستوري (مثلاً 2 + 3 = 5)، وتقدر تدوس "تعديل" في أي وقت عشان تمسح الهيستوري وتكتب رقم جديد من الأول.</li>
+                    <li>البيانات والتقدم بتتحفظ أوتوماتيك على الجهاز. لو عايز تقفل الإذن الحالي وتبدأ واحد جديد، دوس زرار "✕ إلغاء الإذن" اللي بيظهر فوق.</li>
                 </ol>
             </div>
         </div>
@@ -2371,8 +2375,51 @@
         // --- DOCUMENT SEARCH MODULE (بحث في إذن الصرف) - قائم على رفع ملف إكسيل الإذن مباشرة ---
         // كل صف في الشيت بيمثل صنف واحد بالأعمدة الثابتة: م / الباركود / اسم الصنف / الكمية الفعلية
         // (نفس تنسيق الطباعة الأصلي من نظام المخازن، بترتيب أعمدة ثابت حتى لو البيانات بتتغير كل مرة).
+        //
+        // نظام تتبع الاستلام: بيتحفظ في localStorage تحت مفتاح ثابت (DOC_SESSION_KEY) مربوط بالإذن الحالي.
+        // كل صنف بيتحدد بمفتاح فريد = رقم "م" (لأنه فريد داخل كل إذن)، وبيتسجل له:
+        //   - checked: هل اتعلّم عليه كـ"استلمنا الكمية كاملة"
+        //   - partialQty: مجموع الكميات الجزئية المسجلة لحد دلوقتي
+        //   - partialHistory: مصفوفة الأرقام اللي اتضافت بالترتيب (لعرض "2 + 3 = 5")
+        // التخزين بيتحدث فوراً مع أي تغيير عشان يفضل التقدم موجود حتى لو المستخدم قفل المتصفح فجأة.
+        const DOC_SESSION_KEY = 'docSearchSession_v1';
         let docItems = []; // { mNumber, barcode, itemName, actualQty }
         let docFileLoaded = false;
+        let docProgress = {}; // { [mNumber]: { checked: bool, partialQty: number, partialHistory: number[] } }
+
+        function saveDocSession() {
+            try {
+                localStorage.setItem(DOC_SESSION_KEY, JSON.stringify({
+                    items: docItems,
+                    progress: docProgress
+                }));
+            } catch (err) {
+                console.error('تعذر حفظ تقدم الإذن', err);
+            }
+        }
+
+        function loadDocSession() {
+            try {
+                const raw = localStorage.getItem(DOC_SESSION_KEY);
+                if (!raw) return false;
+                const parsed = JSON.parse(raw);
+                if (!parsed || !Array.isArray(parsed.items) || parsed.items.length === 0) return false;
+                docItems = parsed.items;
+                docProgress = parsed.progress || {};
+                docFileLoaded = true;
+                return true;
+            } catch (err) {
+                console.error('تعذر استرجاع تقدم الإذن المحفوظ', err);
+                return false;
+            }
+        }
+
+        function getProgressFor(mNumber) {
+            if (!docProgress[mNumber]) {
+                docProgress[mNumber] = { checked: false, partialQty: 0, partialHistory: [] };
+            }
+            return docProgress[mNumber];
+        }
 
         // فهرسة أعمدة الشيت بالاعتماد على نص صف العناوين نفسه (مش على رقم عمود ثابت) عشان نضمن الدقة
         // حتى لو تغير ترتيب الأعمدة شوية بين نسخة وأخرى من نفس تنسيق الطباعة.
@@ -2446,7 +2493,9 @@
                         return;
                     }
                     docItems = items;
+                    docProgress = {};
                     docFileLoaded = true;
+                    saveDocSession();
                     renderDocStatus();
                     showNotification(`تم تحميل الإذن بنجاح! تم استخراج ${items.length} صنف.`);
                     event.target.value = '';
@@ -2464,14 +2513,40 @@
         function renderDocStatus() {
             const statusEl = document.getElementById('docPagesStatus');
             const searchGroup = document.getElementById('docSearchGroup');
+            const uploadGroup = document.getElementById('docUploadGroup');
+            const cancelBtn = document.getElementById('docCancelBtn');
             if (!statusEl) return;
             if (!docFileLoaded || docItems.length === 0) {
                 statusEl.innerHTML = '';
                 if (searchGroup) searchGroup.style.display = 'none';
+                if (uploadGroup) uploadGroup.style.display = 'block';
+                if (cancelBtn) cancelBtn.style.display = 'none';
                 return;
             }
-            statusEl.innerHTML = `<div class="alert-banner green" style="background-color: var(--success-bg); border-color: var(--success-border); color: #065f46;">✅ تم تحميل الإذن (${docItems.length} صنف) وجاهز للبحث</div>`;
+            const checkedCount = Object.values(docProgress).filter(p => p && p.checked).length;
+            statusEl.innerHTML = `<div class="alert-banner green" style="background-color: var(--success-bg); border-color: var(--success-border); color: #065f46;">✅ الإذن محمّل (${docItems.length} صنف) — تم استلام ${checkedCount} صنف بالكامل لحد دلوقتي</div>`;
             if (searchGroup) searchGroup.style.display = 'block';
+            // بمجرد ما الإذن يتحمل، بنخفي مربع رفع ملف تاني بالغلط فوق الإذن الحالي - المستخدم لازم يلغي الإذن الحالي أولاً
+            if (uploadGroup) uploadGroup.style.display = 'none';
+            if (cancelBtn) cancelBtn.style.display = 'inline-block';
+        }
+
+        function confirmCancelDocSession() {
+            if (!docFileLoaded) return;
+            const ok = window.confirm('هل أنت متأكد أنك عايز تلغي الإذن الحالي؟ هيتمسح كل التقدم المسجل (الأصناف المتعلّم عليها والكميات الجزئية) ومينفعش ترجعه تاني.');
+            if (!ok) return;
+            docItems = [];
+            docProgress = {};
+            docFileLoaded = false;
+            localStorage.removeItem(DOC_SESSION_KEY);
+            const searchInput = document.getElementById('docSearchInput');
+            if (searchInput) searchInput.value = '';
+            const resultsDiv = document.getElementById('docSearchResults');
+            if (resultsDiv) resultsDiv.innerHTML = '';
+            const fileInput = document.getElementById('docExcelFile');
+            if (fileInput) fileInput.value = '';
+            renderDocStatus();
+            showNotification('تم إلغاء الإذن الحالي. تقدر ترفع إذن جديد دلوقتي.');
         }
 
         function searchDocPages() {
@@ -2501,17 +2576,81 @@
             let html = `<div class="alert-banner green" style="background-color: var(--success-bg); border-color: var(--success-border); color: #065f46;">تم العثور على ${matches.length} صنف مطابق</div>`;
             matches.forEach(it => {
                 const qtyText = (it.actualQty !== '' && it.actualQty !== undefined && it.actualQty !== null) ? it.actualQty : '-';
+                const prog = getProgressFor(it.mNumber);
+                const checkedClass = prog.checked ? 'result-box green' : 'result-box blue';
+                const historyText = prog.partialHistory && prog.partialHistory.length > 0
+                    ? prog.partialHistory.join(' + ') + ' = ' + prog.partialQty
+                    : '';
                 html += `
-                    <div class="result-box blue" style="margin-top: 10px;">
+                    <div class="${checkedClass}" style="margin-top: 10px;" id="docItemBox_${it.mNumber}">
                         <div class="result-box-label">رقم الصنف بالإذن (م): <b style="font-size:1.1rem;">${it.mNumber}</b></div>
                         <div class="result-box-value" style="font-size: 1.05rem;">${it.itemName || '(اسم الصنف غير متوفر)'}</div>
                         <div style="font-size: 0.9rem; color: #475569; margin-top:4px; direction:ltr; text-align:right;">الباركود: ${it.barcode}</div>
-                        <div style="font-size: 0.9rem; color: #475569; margin-top:4px;">الكمية الفعلية: <b>${qtyText}</b></div>
+                        <div style="font-size: 0.9rem; color: #475569; margin-top:4px;">الكمية الفعلية بالإذن: <b>${qtyText}</b></div>
+
+                        <div style="margin-top:12px; padding-top:12px; border-top:1px dashed #cbd5e1;">
+                            <button onclick="toggleDocChecked('${it.mNumber}')" style="width:100%; padding:12px; border-radius:8px; border:none; font-weight:bold; font-size:0.95rem; cursor:pointer; ${prog.checked ? 'background-color: var(--success); color:white;' : 'background-color:#e2e8f0; color:#334155;'}">
+                                ${prog.checked ? '✓ تم استلام الكمية كاملة' : '✓ استلمنا الكمية كاملة'}
+                            </button>
+                        </div>
+
+                        <div style="margin-top:10px;">
+                            <div style="font-size:0.85rem; font-weight:700; color:#334155; margin-bottom:6px;">تسجيل كمية جزئية موجودة دلوقتي</div>
+                            <div id="docPartialDisplay_${it.mNumber}" style="font-size:0.85rem; color:#0369a1; margin-bottom:6px; ${historyText ? '' : 'display:none;'}">
+                                الكمية المسجلة لحد دلوقتي: <b>${historyText}</b>
+                            </div>
+                            <div style="display:flex; gap:8px;">
+                                <input type="number" id="docPartialInput_${it.mNumber}" placeholder="اكتب العدد اللي لقيته" style="flex:1; padding:10px; font-size:0.95rem;">
+                                <button onclick="addDocPartialQty('${it.mNumber}')" style="background-color: var(--dark-header); color:white; border:none; border-radius:8px; padding:0 16px; font-weight:bold; white-space:nowrap;">إضافة</button>
+                                ${prog.partialHistory && prog.partialHistory.length > 0 ? `<button onclick="resetDocPartialQty('${it.mNumber}')" style="background-color:#f1f5f9; color:#334155; border:1px solid #cbd5e1; border-radius:8px; padding:0 14px; font-weight:bold; white-space:nowrap;">تعديل</button>` : ''}
+                            </div>
+                        </div>
                     </div>
                 `;
             });
             resultsDiv.innerHTML = html;
         }
+
+        function toggleDocChecked(mNumber) {
+            const prog = getProgressFor(mNumber);
+            prog.checked = !prog.checked;
+            saveDocSession();
+            renderDocStatus();
+            searchDocPages();
+        }
+
+        function addDocPartialQty(mNumber) {
+            const input = document.getElementById('docPartialInput_' + mNumber);
+            if (!input) return;
+            const val = parseFloat(input.value);
+            if (isNaN(val) || val <= 0) {
+                showNotification('من فضلك اكتب رقم صحيح أكبر من صفر.');
+                return;
+            }
+            const prog = getProgressFor(mNumber);
+            if (!prog.partialHistory) prog.partialHistory = [];
+            prog.partialHistory.push(val);
+            prog.partialQty = (prog.partialQty || 0) + val;
+            saveDocSession();
+            input.value = '';
+            searchDocPages();
+        }
+
+        function resetDocPartialQty(mNumber) {
+            const ok = window.confirm('هيتمسح الهيستوري الحالي وتقدر تكتب رقم جديد من الأول. متأكد؟');
+            if (!ok) return;
+            const prog = getProgressFor(mNumber);
+            prog.partialQty = 0;
+            prog.partialHistory = [];
+            saveDocSession();
+            searchDocPages();
+        }
+
+        // استرجاع تقدم إذن سابق (لو موجود) بمجرد فتح التطبيق، عشان يفضل محفوظ حتى لو المستخدم قفل المتصفح
+        window.addEventListener('DOMContentLoaded', function() {
+            const restored = loadDocSession();
+            renderDocStatus();
+        });
 
         // --- Navigation (Swipe to go back via History API) ---
         function showHome() {
