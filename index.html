@@ -884,14 +884,10 @@
                 <button class="back-btn" onclick="goHome()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
                 <span class="module-title">الجبن المستحلب / المخللات</span>
             </div>
-            <div class="info-box">الاستلام بناءً على <b>أقل وزن تصفية</b>. في حال ارتفاع كل الصفائح/العبوات عن المعياري؛ يُحسب التعويض (ينطبق على الجبن المستحلب والمخللات).</div>
+            <div class="info-box">الاستلام بناءً على <b>أقل وزن تصفية</b> (وهو الاستاندر الفعلي للشحنة). الفرق بين متوسط كل العينات وأقل وزن تصفية يُحسب دائماً كـ<b>تعويض لصالح الشركة</b> عن الجرادل الأتقل من الأقل (ينطبق على الجبن المستحلب والمخللات).</div>
             <div class="form-group">
                 <label>الكمية الكلية (عدد الجرادل/الصفائح)</label>
                 <input type="number" id="procTotalQty" oninput="calculateProcessed()">
-            </div>
-            <div class="form-group">
-                <label>الوزن الاستاندر المعياري (اختياري)</label>
-                <input type="number" id="procStandard" oninput="calculateProcessed()" placeholder="مثال: 20">
             </div>
             <div class="samples-container">
                 <div class="samples-header">
@@ -906,7 +902,7 @@
             <div class="results-section" id="procResults" style="display: none;">
                 <h3 class="results-title">النتائج:</h3>
                 <div class="result-box blue">
-                    <div class="result-box-label">أقل وزن تصفية (الذي تم الاستلام عليه)</div>
+                    <div class="result-box-label">أقل وزن تصفية (الاستاندر المعتمد للاستلام)</div>
                     <div class="result-box-value" id="procResMin">0 كجم</div>
                 </div>
                 <div class="result-box green">
@@ -922,9 +918,9 @@
                 <h4>💡 طريقة ومراحل الحساب:</h4>
                 <ol>
                     <li>يتم تصفية العينات المختارة وتحديد الوزن الصافي لكل عينة في المعمل.</li>
-                    <li>يتم اختيار <b>أقل وزن تصفية</b> بين العينات وتعتمد عليه عملية الاستلام بالكامل.</li>
-                    <li><code>الكمية الفعلي</code> = أقل وزن تصفية × الكمية الكلية.</li>
-                    <li><b>شرط الاستاندر:</b> إذا كانت جميع العينات الموزونة أعلى من الوزن المعياري (الاستاندر)، يتم الاستلام على الاستاندر، ويُحسب التعويض بالمعادلة التالية لصالح الشركة: <code>التعويض = (متوسط العينات الصافي - الوزن الصافي اللي تم الاستلام عليه "الاستاندر") × الكمية الكلية</code>.</li>
+                    <li>يتم اختيار <b>أقل وزن تصفية</b> بين كل العينات، وهذا الوزن يصبح هو <b>الاستاندر المعتمد</b> لعملية الاستلام بالكامل.</li>
+                    <li><code>الكمية الفعلي</code> = أقل وزن تصفية (الاستاندر) × الكمية الكلية.</li>
+                    <li><b>حساب التعويض (للجرادل الأتقل من الأقل):</b> نجمع كل أوزان التصفية ونقسمها على عددها للحصول على المتوسط، ثم نطرح منه أقل وزن (الاستاندر) للحصول على تعويض الجردل الواحد: <code>تعويض الجردل الواحد = متوسط كل العينات - أقل وزن تصفية</code>. بعدها: <code>التعويض الكلي = تعويض الجردل الواحد × الكمية الكلية</code>.</li>
                 </ol>
             </div>
         </div>
@@ -1128,7 +1124,7 @@
                 <button class="back-btn" onclick="goHome()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
                 <span class="module-title">الرز والسكر والدقيق</span>
             </div>
-            <div class="info-box">مسموح بعجز حتى 10 جرام لكل كيلو (1%). إذا زاد العجز عن السماحية، <b>يتم خصم العجز بالكامل من الوزن الأساسي</b> وليس من حد السماحية.</div>
+            <div class="info-box">مسموح بعجز حتى 10 جرام لكل كيلو (الحد الأدنى المقبول 990 جرام لكل كيلو / 99%). <b>لا يوجد تعويض جزئي إطلاقاً:</b> لو الوزن الفعلي وصل للحد المسموح أو أعلى، تُستلم الكمية <b>كاملة</b> كما هي بالفاتورة. لو قل عن الحد المسموح، تُرفض الشحنة بالكامل.</div>
             
             <div class="form-group">
                 <label>الكمية الكلية المستلمة (كجم)</label>
@@ -1151,22 +1147,19 @@
 
             <div class="results-section" id="dryResults" style="display: none;">
                 <h3 class="results-title">النتائج:</h3>
-                <div class="result-box green">
-                    <div class="result-box-label">الكمية الفعلي المعتمدة</div>
+                <div class="result-box green" id="dryActualBox">
+                    <div class="result-box-label" id="dryResActualLabel">الكمية الفعلي المعتمدة (تُستلم كاملة)</div>
                     <div class="result-box-value" id="dryResActual">0 كجم</div>
                 </div>
-                <div class="result-box red" id="dryCompBox" style="display: none;">
-                    <div class="result-box-label">التعويض المطلوب خصمه (مقرب لأعلى)</div>
-                    <div class="result-box-value" id="dryResComp">0 كجم</div>
-                </div>
+                <div id="dryDecisionBanner"></div>
             </div>
             <div class="steps-box" id="dryStepsBox">
                 <h4>💡 طريقة ومراحل الحساب:</h4>
                 <ol>
                     <li>نأخذ عينة اختبار وزنها الإجمالي 100 كيلو من البضاعة الموردة بالكامل ونقوم بوزنها بدقة (أو وزن الشحنة بالكامل).</li>
-                    <li>تُعطى نسبة سماح حتى 1 كجم للعينة 100 كجم (أو 1% من الإجمالي).</li>
-                    <li>إذا قل الوزن عن حد السماح (أقل من 99 كجم للعينة أو 99% للشحنة): <b>يُلغى السماح ويتم خصم العجز بالكامل من الوزن الأساسي</b> (100 كجم أو الكمية المطلوبة).</li>
-                    <li><b>التعويض المستحق للشركة</b> يُجبر دائماً ويُقرب لأقرب رقم صحيح أعلى، ويُطرح من الكمية الكلية لحساب الفعلي.</li>
+                    <li>الحد الأدنى المقبول للكيلو الواحد هو 990 جرام (أي 99% من الوزن المكتوب بالفاتورة).</li>
+                    <li>إذا كان الوزن الفعلي (العينة أو الشحنة بالكامل) <b>يساوي أو أكبر</b> من الحد المسموح: تُستلم الكمية بالكامل كما هي مكتوبة بالفاتورة (بدون أي نقصان أو تعويض).</li>
+                    <li>إذا كان الوزن الفعلي <b>أقل</b> من الحد المسموح: <b>تُرفض الشحنة بالكامل</b>، وتصبح الكمية الفعلي المعتمدة = صفر.</li>
                 </ol>
             </div>
         </div>
@@ -2934,58 +2927,52 @@
             updateNaturalSteps(totalQty, avg, standard, actual, comp);
         }
 
-        function updateProcessedSteps(totalQty, min, avg, standard, actual, comp) {
+        function updateProcessedSteps(totalQty, min, avg, actual, comp) {
             const box = document.getElementById('procStepsBox');
             if (isNaN(totalQty) || isNaN(min) || min <= 0) {
                 box.innerHTML = `
                     <h4>💡 طريقة ومراحل الحساب:</h4>
                     <ol>
                         <li>يتم تصفية العينات المختارة وتحديد الوزن الصافي لكل عينة في المعمل.</li>
-                        <li>يتم اختيار <b>أقل وزن تصفية</b> بين العينات وتعتمد عليه عملية الاستلام بالكامل.</li>
-                        <li><code>الكمية الفعلي</code> = أقل وزن تصفية × الكمية الكلية.</li>
-                        <li><b>شرط الاستاندر:</b> إذا كانت جميع العينات الموزونة أعلى من الوزن المعياري (الاستاندر)، يتم الاستلام على الاستاندر، ويُحسب التعويض بالمعادلة التالية لصالح الشركة: <code>التعويض = (متوسط العينات الصافي - الوزن الصافي اللي تم الاستلام عليه "الاستاندر") × الكمية الكلية</code>.</li>
+                        <li>يتم اختيار <b>أقل وزن تصفية</b> بين كل العينات، وهذا الوزن يصبح هو <b>الاستاندر المعتمد</b> لعملية الاستلام بالكامل.</li>
+                        <li><code>الكمية الفعلي</code> = أقل وزن تصفية (الاستاندر) × الكمية الكلية.</li>
+                        <li><b>حساب التعويض (للجرادل الأتقل من الأقل):</b> نجمع كل أوزان التصفية ونقسمها على عددها للحصول على المتوسط، ثم نطرح منه أقل وزن (الاستاندر) للحصول على تعويض الجردل الواحد: <code>تعويض الجردل الواحد = متوسط كل العينات - أقل وزن تصفية</code>. بعدها: <code>التعويض الكلي = تعويض الجردل الواحد × الكمية الكلية</code>.</li>
                     </ol>
                 `;
                 return;
             }
             const calcActual = min * totalQty;
             let html = `<h4>💡 خطوات الحل الحسابية بالتفصيل:</h4><ol>`;
-            html += `<li><b>تحديد الوزن المعتمد الفردي (أقل وزن تصفية):</b><br>أقل وزن صافي تم رصده بالعينة هو <code>${min.toFixed(3)}</code> كجم.</li>`;
-            html += `<li><b>حساب الوزن الإجمالي المقترح بالكامل:</b><br>الوزن الإجمالي = أقل وزن تصفية (<code>${min.toFixed(3)}</code> كجم) × الكمية الكلية الموردة (<code>${totalQty}</code> جردل/عبوة)<br>الوزن الإجمالي المقترح = <code>${calcActual.toFixed(3)}</code> كجم.</li>`;
+            html += `<li><b>تحديد الاستاندر المعتمد (أقل وزن تصفية):</b><br>أقل وزن صافي تم رصده بالعينات هو <code>${min.toFixed(3)}</code> كجم، وهذا الوزن يُعتمد كاستاندر الاستلام للشحنة بالكامل.</li>`;
+            html += `<li><b>حساب الكمية الفعلي المعتمدة:</b><br>الفعلي المعتمد = أقل وزن تصفية (<code>${min.toFixed(3)}</code> كجم) × الكمية الكلية الموردة (<code>${totalQty}</code> جردل/عبوة)<br><code>الفعلي المعتمد</code> = <b><code>${calcActual.toFixed(3)}</code> كجم</b>.</li>`;
+            html += `<li><b>حساب متوسط كل العينات الصافي:</b><br>متوسط العينات = مجموع كل أوزان التصفية ÷ عددها = <b><code>${avg.toFixed(3)}</code> كجم</b>.</li>`;
 
-            if (standard && weightsAllOverStandard(standard)) {
-                html += `<li><b>مقارنة العينات بالاستاندر المعياري:</b><br>بما أن جميع العينات أعلى من الاستاندر (أقل عينة <code>${min.toFixed(3)}</code> كجم أكبر من الاستاندر المعياري <code>${standard.toFixed(3)}</code> كجم):<br>1. الوزن الفعلي المعتمد للاستلام يثبت على الاستاندر:<br><code>الفعلي المعتمد</code> = الاستاندر (<code>${standard.toFixed(3)}</code> كجم) × <code>${totalQty}</code> جردل/عبوة = <b><code>${actual.toFixed(3)}</code> كجم</b>.<br>2. يحسب الفارق كتعويض يستقطع للشركة بالمعادلة:<br><code>التعويض المستحق</code> = (متوسط العينات الصافي <code>${avg.toFixed(3)}</code> - الوزن الصافي اللي تم الاستلام عليه <code>${standard.toFixed(3)}</code>) × الكمية الكلية <code>${totalQty}</code><br><code>التعويض النهائي</code> = (<code>${avg.toFixed(3)}</code> - <code>${standard.toFixed(3)}</code>) × <code>${totalQty}</code> = <b><code>${comp.toFixed(3)}</code> كجم</b>.</li>`;
+            if (comp > 0.0000001) {
+                html += `<li><b>حساب تعويض الجردل الواحد (فرق الجرادل الأتقل من الأقل):</b><br>تعويض الجردل الواحد = متوسط العينات (<code>${avg.toFixed(3)}</code> كجم) - أقل وزن تصفية (<code>${min.toFixed(3)}</code> كجم) = <b><code>${(avg - min).toFixed(3)}</code> كجم</b>.</li>`;
+                html += `<li><b>حساب التعويض الكلي للشحنة:</b><br><code>التعويض الكلي</code> = تعويض الجردل الواحد (<code>${(avg - min).toFixed(3)}</code> كجم) × الكمية الكلية (<code>${totalQty}</code> جردل/عبوة) = <b><code>${comp.toFixed(3)}</code> كجم</b>.</li>`;
             } else {
-                html += `<li><b>مقارنة العينات بالاستاندر المعياري:</b><br>${standard ? `بما أن هناك عينات أقل من أو تساوي وزن الاستاندر (أقل عينة صافي <code>${min.toFixed(3)}</code> كجم):<br>` : `بما أنه لم يتم تحديد وزن استاندر معياري:<br>`}يتم احتساب البضاعة بناءً على أقل وزن تصفية مباشرة:<br><code>الفعلي النهائي المعتمد</code> = أقل وزن تصفية (<code>${min.toFixed(3)}</code> كجم) × <code>${totalQty}</code> جردل/عبوة = <b><code>${actual.toFixed(3)}</code> كجم</b> (ولا يوجد تعويض).</li>`;
+                html += `<li><b>حساب التعويض:</b><br>بما أن متوسط العينات (<code>${avg.toFixed(3)}</code> كجم) يساوي أقل وزن تصفية (كل العينات متساوية)، فلا يوجد فرق يُحسب كتعويض: <b>التعويض = 0.000 كجم</b>.</li>`;
             }
             html += `</ol>`;
             box.innerHTML = html;
         }
 
-        function weightsAllOverStd(standard) {
-            const samples = Array.from(document.querySelectorAll('.proc-sample')).map(el => parseFloat(el.value)).filter(n => !isNaN(n) && n > 0);
-            return samples.every(s => s > standard);
-        }
-
         function calculateProcessed() {
             const totalQty = parseFloat(document.getElementById('procTotalQty').value);
-            const standard = parseFloat(document.getElementById('procStandard').value);
             const samples = Array.from(document.querySelectorAll('.proc-sample')).map(el => parseFloat(el.value)).filter(n => !isNaN(n) && n > 0);
             const resultsSec = document.getElementById('procResults');
             if (!totalQty || samples.length === 0) {
                 resultsSec.style.display = 'none';
-                updateProcessedSteps(NaN, NaN, NaN, NaN, NaN, NaN);
+                updateProcessedSteps(NaN, NaN, NaN, NaN, NaN);
                 return;
             }
             const min = Math.min(...samples);
             const sum = samples.reduce((acc, curr) => acc + curr, 0);
             const avg = sum / samples.length;
-            let actual = min * totalQty;
-            let comp = 0;
-            const allOver = standard && samples.every(s => s > standard);
-            if (allOver) {
-                actual = standard * totalQty;
-                comp = (avg - standard) * totalQty;
+            const actual = min * totalQty;
+            const compPerUnit = avg - min;
+            const comp = compPerUnit * totalQty;
+            if (comp > 0.0000001) {
                 document.getElementById('procCompBox').style.display = 'block';
             } else {
                 document.getElementById('procCompBox').style.display = 'none';
@@ -2994,12 +2981,7 @@
             document.getElementById('procResActual').innerText = actual.toFixed(3) + ' كجم';
             document.getElementById('procResComp').innerText = comp.toFixed(3) + ' كجم';
             resultsSec.style.display = 'block';
-            updateProcessedSteps(totalQty, min, avg, standard, actual, comp);
-        }
-
-        function weightsAllOverStandard(std) {
-            const samples = Array.from(document.querySelectorAll('.proc-sample')).map(el => parseFloat(el.value)).filter(n => !isNaN(n) && n > 0);
-            return samples.every(s => s > std);
+            updateProcessedSteps(totalQty, min, avg, actual, comp);
         }
 
         function calculateRoumi() {
@@ -3256,51 +3238,58 @@
             calculateDry();
         }
 
-        function updateDrySteps(totalQty, sampleW, actual, comp, isDeficit, totalActualW, allowableW) {
+        function updateDrySteps(totalQty, sampleW, actual, isRejected, totalActualW, allowableW) {
             const box = document.getElementById('dryStepsBox');
             if (isNaN(totalQty) || totalQty <= 0) {
                 box.innerHTML = `
                     <h4>💡 طريقة ومراحل الحساب:</h4>
                     <ol>
                         <li>نأخذ عينة اختبار وزنها الإجمالي 100 كيلو من البضاعة الموردة بالكامل ونقوم بوزنها بدقة (أو وزن الشحنة بالكامل).</li>
-                        <li>تُعطى نسبة سماح حتى 1 كجم للعينة 100 كجم (أو 1% من الإجمالي).</li>
-                        <li>إذا قل الوزن عن حد السماح (أقل من 99 كجم للعينة أو 99% للشحنة): <b>يُلغى السماح ويتم خصم العجز بالكامل من الوزن الأساسي</b> (100 كجم أو الكمية المطلوبة).</li>
-                        <li><b>التعويض المستحق للشركة</b> يُجبر دائماً ويُقرب لأقرب رقم صحيح أعلى، ويُطرح من الكمية الكلية لحساب الفعلي.</li>
+                        <li>الحد الأدنى المقبول للكيلو الواحد هو 990 جرام (أي 99% من الوزن المكتوب بالفاتورة).</li>
+                        <li>إذا كان الوزن الفعلي (العينة أو الشحنة بالكامل) <b>يساوي أو أكبر</b> من الحد المسموح: تُستلم الكمية بالكامل كما هي مكتوبة بالفاتورة (بدون أي نقصان أو تعويض).</li>
+                        <li>إذا كان الوزن الفعلي <b>أقل</b> من الحد المسموح: <b>تُرفض الشحنة بالكامل</b>، وتصبح الكمية الفعلي المعتمدة = صفر.</li>
                     </ol>
                 `;
                 return;
             }
             if (!isNaN(sampleW) && sampleW > 0) {
                 let html = `<h4>💡 خطوات الحل الحسابية بالتفصيل (عينة 100 كجم):</h4><ol>`;
-                html += `<li><b>تقييم عينة الـ 100 كجم الموزونة:</b><br>الوزن الفعلي للعينة = <b><code>${sampleW.toFixed(3)}</code> كجم</b>.</li>`;
-                if (isDeficit) {
-                    const deficit = 100 - sampleW;
-                    const numSamples = totalQty / 100;
-                    const rawComp = deficit * numSamples;
-                    html += `<li><b>حساب قيمة العجز المكتشف:</b><br>بما أن العينة أقل من الحد المسموح للاستلام الآمن (99 كجم)، <b>يُحسب العجز من الوزن الأساسي (100 كجم) بالكامل</b>:<br>العجز لكل 100 كجم = <code>100</code> - <code>${sampleW.toFixed(3)}</code> = <b><code>${deficit.toFixed(3)}</code> كجم عجز</b>.</li>`;
-                    html += `<li><b>حساب إجمالي التعويض المستقطع:</b><br>1. عدد العينات في الشحنة = <code>${totalQty.toFixed(1)}</code> ÷ 100 = <code>${numSamples.toFixed(2)}</code> عينة.<br>2. قيمة العجز الفعلي بالكامل = <code>${deficit.toFixed(3)}</code> × <code>${numSamples.toFixed(2)}</code> = <code>${rawComp.toFixed(3)}</code> كجم.<br>3. تطبيق التقريب لأعلى رقم صحيح = <b><code>${comp}</code> كجم تعويض</b>.</li>`;
-                    html += `<li><b>حساب الكمية الفعلي النهائي المعتمد:</b><br><code>الفعلي النهائي المعتمد</code> = <code>${totalQty.toFixed(1)}</code> - التعويض <code>${comp}</code> = <b><code>${actual.toFixed(1)}</code> كجم</b>.</li>`;
+                html += `<li><b>تقييم عينة الـ 100 كجم الموزونة:</b><br>الوزن الفعلي للعينة = <b><code>${sampleW.toFixed(3)}</code> كجم</b>. الحد الأدنى المقبول = <code>99.000</code> كجم (990 جرام/كيلو).</li>`;
+                if (isRejected) {
+                    html += `<li><b>قرار الرفض:</b><br>بما أن وزن العينة الفعلي (<code>${sampleW.toFixed(3)}</code> كجم) <b>أقل</b> من الحد المسموح (<code>99.000</code> كجم):<br><b>تُرفض الشحنة بالكامل ولا يوجد استلام جزئي أو تعويض</b>:<br><code>الكمية الفعلي المعتمدة</code> = <b><code>0.0</code> كجم (مرفوضة بالكامل)</b>.</li>`;
                 } else {
-                    html += `<li><b>تقييم العجز والقبول:</b><br>بما أن وزن العينة الفعلي (<code>${sampleW.toFixed(3)}</code> كجم) أكبر من أو يساوي الحد المقبول (<b>99 كجم</b>):<br>تستلم الشحنة كاملة فوراً وبدون أي استقطاعات لتعويض العجز:<br><code>الفعلي النهائي المعتمد</code> = <b><code>${actual.toFixed(1)}</code> كجم</b>.</li>`;
+                    html += `<li><b>قرار القبول:</b><br>بما أن وزن العينة الفعلي (<code>${sampleW.toFixed(3)}</code> كجم) <b>أكبر من أو يساوي</b> الحد المقبول (<code>99.000</code> كجم):<br>تُستلم الشحنة بالكامل كما هي مكتوبة بالفاتورة بدون أي نقصان:<br><code>الكمية الفعلي المعتمدة</code> = <b><code>${actual.toFixed(1)}</code> كجم</b>.</li>`;
                 }
                 html += `</ol>`;
                 box.innerHTML = html;
             } else if (!isNaN(totalActualW) && totalActualW > 0) {
                 let html = `<h4>💡 خطوات الحل الحسابية بالتفصيل (طريقة وزن الشحنة بالكامل):</h4><ol>`;
-                html += `<li><b>حساب الحد الأدنى المقبول (سماح 1%):</b><br>الحد الأدنى المقبول = <code>${totalQty.toFixed(1)}</code> × 0.99 = <b><code>${allowableW.toFixed(3)}</code> كجم</b>.</li>`;
+                html += `<li><b>حساب الحد الأدنى المقبول (99%):</b><br>الحد الأدنى المقبول = <code>${totalQty.toFixed(1)}</code> × 0.99 = <b><code>${allowableW.toFixed(3)}</code> كجم</b>.</li>`;
                 html += `<li><b>تقييم وزن الشحنة الفعلي بالكامل:</b><br>الوزن الفعلي المستلم لشحنتك = <b><code>${totalActualW.toFixed(3)}</code> كجم</b>.</li>`;
-                if (isDeficit) {
-                    const deficit = totalQty - totalActualW;
-                    html += `<li><b>حساب قيمة العجز المكتشف:</b><br>بما أن الوزن الفعلي أقل من الحد المقبول (<code>${allowableW.toFixed(3)}</code> كجم)، <b>يُحسب العجز من إجمالي الكمية المطلوبة كاملاً</b>:<br>إجمالي العجز الفعلي = <code>${totalQty.toFixed(3)}</code> - <code>${totalActualW.toFixed(3)}</code> = <b><code>${deficit.toFixed(3)}</code> كجم عجز</b>.</li>`;
-                    html += `<li><b>تطبيق شرط التقريب الإداري لأعلى رقم صحيح:</b><br>التعويض المطلوب خصمه = <b><code>${comp}</code> كجم تعويض</b>.</li>`;
-                    html += `<li><b>حساب الكمية الفعلي النهائي المعتمد:</b><br><code>الفعلي المعتمد</code> = <code>${totalQty.toFixed(1)}</code> - <code>${comp}</code> = <b><code>${actual.toFixed(1)}</code> كجم</b>.</li>`;
+                if (isRejected) {
+                    html += `<li><b>قرار الرفض:</b><br>بما أن الوزن الفعلي (<code>${totalActualW.toFixed(3)}</code> كجم) <b>أقل</b> من الحد المقبول (<code>${allowableW.toFixed(3)}</code> كجم):<br><b>تُرفض الشحنة بالكامل ولا يوجد استلام جزئي أو تعويض</b>:<br><code>الكمية الفعلي المعتمدة</code> = <b><code>0.0</code> كجم (مرفوضة بالكامل)</b>.</li>`;
                 } else {
-                    html += `<li><b>تقييم العجز والقبول:</b><br>بما أن الوزن الفعلي (<code>${totalActualW.toFixed(3)}</code> كجم) أكبر من أو يساوي الحد المقبول (<b><code>${allowableW.toFixed(3)}</code> كجم</b>):<br>تستلم الشحنة كاملة فوراً وبدون استقطاعات:<br><code>الفعلي المعتمد</code> = <b><code>${actual.toFixed(1)}</code> كجم</b>.</li>`;
+                    html += `<li><b>قرار القبول:</b><br>بما أن الوزن الفعلي (<code>${totalActualW.toFixed(3)}</code> كجم) <b>أكبر من أو يساوي</b> الحد المقبول (<code>${allowableW.toFixed(3)}</code> كجم):<br>تُستلم الشحنة بالكامل كما هي مكتوبة بالفاتورة بدون أي نقصان:<br><code>الكمية الفعلي المعتمدة</code> = <b><code>${actual.toFixed(1)}</code> كجم</b>.</li>`;
                 }
                 html += `</ol>`;
                 box.innerHTML = html;
             } else {
-                box.innerHTML = `<h4>💡 طريقة ومراحل الحساب للكميات:</h4><ol><li>الكمية الكلية المستلمة: <code>${totalQty.toFixed(1)}</code> كجم.</li><li>طريقة الحساب الحالية: <b>${currentDryMethod === 'sample' ? 'عينة الـ 100 كجم بنسبة سماح 1 كجم' : 'وزن الشحنة بالكامل بنسبة سماح 1%'}</b>.</li><li>يرجى إدخال الوزن المطلوب لعرض خطوات الحساب التفصيلية بالأرقام.</li></ol>`;
+                box.innerHTML = `<h4>💡 طريقة ومراحل الحساب للكميات:</h4><ol><li>الكمية الكلية المستلمة: <code>${totalQty.toFixed(1)}</code> كجم.</li><li>طريقة الحساب الحالية: <b>${currentDryMethod === 'sample' ? 'عينة الـ 100 كجم بحد أدنى مقبول 99 كجم' : 'وزن الشحنة بالكامل بحد أدنى مقبول 99%'}</b>.</li><li>يرجى إدخال الوزن المطلوب لعرض خطوات الحساب التفصيلية بالأرقام.</li></ol>`;
+            }
+        }
+
+        function renderDryDecision(isRejected) {
+            const banner = document.getElementById('dryDecisionBanner');
+            const actualBox = document.getElementById('dryActualBox');
+            const actualLabel = document.getElementById('dryResActualLabel');
+            if (isRejected) {
+                banner.innerHTML = `<div class="alert-banner red">🛑 الشحنة مرفوضة بالكامل: الوزن الفعلي أقل من الحد المسموح (990 جرام/كيلو)، ولا يوجد استلام جزئي أو تعويض.</div>`;
+                actualBox.className = 'result-box red';
+                actualLabel.innerText = 'الكمية الفعلي المعتمدة (مرفوضة بالكامل)';
+            } else {
+                banner.innerHTML = `<div class="alert-banner green">✅ الوزن الفعلي ضمن الحد المسموح: تُستلم الكمية كاملة كما هي بالفاتورة.</div>`;
+                actualBox.className = 'result-box green';
+                actualLabel.innerText = 'الكمية الفعلي المعتمدة (تُستلم كاملة)';
             }
         }
 
@@ -3312,12 +3301,11 @@
                 document.getElementById('dryMethodSegment').style.display = 'none';
                 document.getElementById('drySample100Group').style.display = 'block';
                 document.getElementById('dryTotalActualGroup').style.display = 'none';
-                updateDrySteps(NaN, NaN, NaN, NaN, false, NaN, NaN);
+                updateDrySteps(NaN, NaN, NaN, false, NaN, NaN);
                 return;
             }
             let actual = totalQty;
-            let comp = 0;
-            let isDeficit = false;
+            let isRejected = false;
             if (totalQty >= 100) {
                 document.getElementById('dryMethodSegment').style.display = 'flex';
                 if (currentDryMethod === 'sample') {
@@ -3326,46 +3314,31 @@
                     const sampleW = parseFloat(document.getElementById('drySampleWeight').value);
                     if (isNaN(sampleW) || sampleW <= 0) {
                         resultsSec.style.display = 'none';
-                        updateDrySteps(totalQty, NaN, NaN, NaN, false, NaN, NaN);
+                        updateDrySteps(totalQty, NaN, NaN, false, NaN, NaN);
                         return;
                     }
-                    isDeficit = sampleW < 99;
-                    if (isDeficit) {
-                        const numSamples = totalQty / 100;
-                        const deficit = 100 - sampleW;
-                        comp = safeCeil(deficit * numSamples);
-                        actual = totalQty - comp;
-                        document.getElementById('dryCompBox').style.display = 'block';
-                    } else {
-                        document.getElementById('dryCompBox').style.display = 'none';
-                    }
+                    isRejected = sampleW < 99;
+                    actual = isRejected ? 0 : totalQty;
                     document.getElementById('dryResActual').innerText = actual.toFixed(1) + ' كجم';
-                    document.getElementById('dryResComp').innerText = comp.toFixed(1) + ' كجم';
+                    renderDryDecision(isRejected);
                     resultsSec.style.display = 'block';
-                    updateDrySteps(totalQty, sampleW, actual, comp, isDeficit, NaN, NaN);
+                    updateDrySteps(totalQty, sampleW, actual, isRejected, NaN, NaN);
                 } else {
                     document.getElementById('drySample100Group').style.display = 'none';
                     document.getElementById('dryTotalActualGroup').style.display = 'block';
                     const totalActualW = parseFloat(document.getElementById('dryTotalActualWeight').value);
                     if (isNaN(totalActualW) || totalActualW <= 0) {
                         resultsSec.style.display = 'none';
-                        updateDrySteps(totalQty, NaN, NaN, NaN, false, NaN, NaN);
+                        updateDrySteps(totalQty, NaN, NaN, false, NaN, NaN);
                         return;
                     }
                     const allowableW = totalQty * 0.99;
-                    isDeficit = totalActualW < allowableW;
-                    if (isDeficit) {
-                        const deficit = totalQty - totalActualW; 
-                        comp = safeCeil(deficit); 
-                        actual = totalQty - comp;
-                        document.getElementById('dryCompBox').style.display = 'block';
-                    } else {
-                        document.getElementById('dryCompBox').style.display = 'none';
-                    }
+                    isRejected = totalActualW < allowableW;
+                    actual = isRejected ? 0 : totalQty;
                     document.getElementById('dryResActual').innerText = actual.toFixed(1) + ' كجم';
-                    document.getElementById('dryResComp').innerText = comp.toFixed(1) + ' كجم';
+                    renderDryDecision(isRejected);
                     resultsSec.style.display = 'block';
-                    updateDrySteps(totalQty, NaN, actual, comp, isDeficit, totalActualW, allowableW);
+                    updateDrySteps(totalQty, NaN, actual, isRejected, totalActualW, allowableW);
                 }
             } else {
                 document.getElementById('dryMethodSegment').style.display = 'none';
@@ -3374,23 +3347,16 @@
                 const totalActualW = parseFloat(document.getElementById('dryTotalActualWeight').value);
                 if (isNaN(totalActualW) || totalActualW <= 0) {
                     resultsSec.style.display = 'none';
-                    updateDrySteps(totalQty, NaN, NaN, NaN, false, NaN, NaN);
+                    updateDrySteps(totalQty, NaN, NaN, false, NaN, NaN);
                     return;
                 }
                 const allowableW = totalQty * 0.99;
-                isDeficit = totalActualW < allowableW;
-                if (isDeficit) {
-                    const deficit = totalQty - totalActualW;
-                    comp = safeCeil(deficit); 
-                    actual = totalQty - comp;
-                    document.getElementById('dryCompBox').style.display = 'block';
-                } else {
-                    document.getElementById('dryCompBox').style.display = 'none';
-                }
+                isRejected = totalActualW < allowableW;
+                actual = isRejected ? 0 : totalQty;
                 document.getElementById('dryResActual').innerText = actual.toFixed(1) + ' كجم';
-                document.getElementById('dryResComp').innerText = comp.toFixed(1) + ' كجم';
+                renderDryDecision(isRejected);
                 resultsSec.style.display = 'block';
-                updateDrySteps(totalQty, NaN, actual, comp, isDeficit, totalActualW, allowableW);
+                updateDrySteps(totalQty, NaN, actual, isRejected, totalActualW, allowableW);
             }
         }
 
