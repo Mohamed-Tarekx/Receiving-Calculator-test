@@ -748,7 +748,11 @@
                     <span class="arrow-left">&#10094;</span>
                 </button>
                 <button class="menu-card" onclick="openModule('processed')">
-                    <span class="card-title">الجبن المستحلب / المخللات</span>
+                    <span class="card-title">الجبن المستحلب</span>
+                    <span class="arrow-left">&#10094;</span>
+                </button>
+                <button class="menu-card" onclick="openModule('pickles')">
+                    <span class="card-title">المخللات</span>
                     <span class="arrow-left">&#10094;</span>
                 </button>
                 <button class="menu-card" onclick="openModule('roumi')">
@@ -878,16 +882,20 @@
             </div>
         </div>
 
-        <!-- 2. Processed Cheese / Pickles Module -->
+        <!-- 2. Processed Cheese Module -->
         <div id="processedView" class="module-view">
             <div class="module-header">
                 <button class="back-btn" onclick="goHome()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
-                <span class="module-title">الجبن المستحلب / المخللات</span>
+                <span class="module-title">الجبن المستحلب</span>
             </div>
-            <div class="info-box">الاستلام بناءً على <b>أقل وزن تصفية</b> (وهو الاستاندر الفعلي للشحنة). الفرق بين متوسط كل العينات وأقل وزن تصفية يُحسب دائماً كـ<b>تعويض لصالح الشركة</b> عن الجرادل الأتقل من الأقل (ينطبق على الجبن المستحلب والمخللات).</div>
+            <div class="info-box">أدخل الاستاندر المعياري (إجباري). لو <b>كل</b> العينات أعلى من الاستاندر، يُعتمد الاستاندر نفسه للاستلام والتعويض. لو فيه عينات أقل من أو تساوي الاستاندر، يُعتمد <b>أقل وزن تصفية موجود فعلياً</b> بدلاً منه.</div>
             <div class="form-group">
                 <label>الكمية الكلية (عدد الجرادل/الصفائح)</label>
                 <input type="number" id="procTotalQty" oninput="calculateProcessed()">
+            </div>
+            <div class="form-group">
+                <label>الوزن الاستاندر المعياري (إجباري)</label>
+                <input type="number" id="procStandard" oninput="calculateProcessed()" placeholder="مثال: 20">
             </div>
             <div class="samples-container">
                 <div class="samples-header">
@@ -902,7 +910,7 @@
             <div class="results-section" id="procResults" style="display: none;">
                 <h3 class="results-title">النتائج:</h3>
                 <div class="result-box blue">
-                    <div class="result-box-label">أقل وزن تصفية (الاستاندر المعتمد للاستلام)</div>
+                    <div class="result-box-label" id="procResMinLabel">الاستاندر المعتمد للاستلام</div>
                     <div class="result-box-value" id="procResMin">0 كجم</div>
                 </div>
                 <div class="result-box green">
@@ -917,13 +925,64 @@
             <div class="steps-box" id="procStepsBox">
                 <h4>💡 طريقة ومراحل الحساب:</h4>
                 <ol>
-                    <li>يتم تصفية العينات المختارة وتحديد الوزن الصافي لكل عينة في المعمل.</li>
-                    <li>يتم اختيار <b>أقل وزن تصفية</b> بين كل العينات، وهذا الوزن يصبح هو <b>الاستاندر المعتمد</b> لعملية الاستلام بالكامل.</li>
-                    <li><code>الكمية الفعلي</code> = أقل وزن تصفية (الاستاندر) × الكمية الكلية.</li>
-                    <li><b>حساب التعويض (للجرادل الأتقل من الأقل):</b> نجمع كل أوزان التصفية ونقسمها على عددها للحصول على المتوسط، ثم نطرح منه أقل وزن (الاستاندر) للحصول على تعويض الجردل الواحد: <code>تعويض الجردل الواحد = متوسط كل العينات - أقل وزن تصفية</code>. بعدها: <code>التعويض الكلي = تعويض الجردل الواحد × الكمية الكلية</code>.</li>
+                    <li>يتم تصفية العينات المختارة وتحديد الوزن الصافي لكل عينة في المعمل، ويجب تحديد وزن استاندر معياري.</li>
+                    <li><b>لو كل العينات أعلى من الاستاندر (بصرامة):</b> يُعتمد الاستاندر اليدوي نفسه كوزن استلام. <code>الفعلي</code> = الاستاندر × الكمية الكلية. <code>تعويض الجردل الواحد</code> = متوسط كل العينات - الاستاندر. <code>التعويض الكلي</code> = تعويض الجردل الواحد × الكمية الكلية.</li>
+                    <li><b>لو فيه عينة واحدة على الأقل ≤ الاستاندر:</b> يُعتمد <b>أقل وزن موجود فعلياً</b> بدلاً من الاستاندر اليدوي. <code>الفعلي</code> = أقل وزن × الكمية الكلية. <code>تعويض الجردل الواحد</code> = متوسط كل العينات - أقل وزن. <code>التعويض الكلي</code> = تعويض الجردل الواحد × الكمية الكلية.</li>
                 </ol>
             </div>
         </div>
+
+        <!-- 2b. Pickles Module -->
+        <div id="picklesView" class="module-view">
+            <div class="module-header">
+                <button class="back-btn" onclick="goHome()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
+                <span class="module-title">المخللات</span>
+            </div>
+            <div class="info-box">أدخل الاستاندر المعياري (إجباري). لو <b>كل</b> العينات أعلى من الاستاندر، يُعتمد الاستاندر نفسه للاستلام والتعويض. لو فيه عينات أقل من أو تساوي الاستاندر، يُعتمد <b>أقل وزن تصفية موجود فعلياً</b> بدلاً منه. <b>التعويض هنا يُضرب في عدد العينات المصفّاة فقط، وليس في الكمية الكلية.</b></div>
+            <div class="form-group">
+                <label>الكمية الكلية (عدد الجرادل/العبوات)</label>
+                <input type="number" id="pickTotalQty" oninput="calculatePickles()">
+            </div>
+            <div class="form-group">
+                <label>الوزن الاستاندر المعياري (إجباري)</label>
+                <input type="number" id="pickStandard" oninput="calculatePickles()" placeholder="مثال: 20">
+            </div>
+            <div class="samples-container">
+                <div class="samples-header">
+                    <label>أوزان التصفية (الصافي)</label>
+                    <button class="add-sample-btn" id="pickAddBtn" onclick="addSampleField('pick')">+ إضافة وزن</button>
+                </div>
+                <div id="pickSamplesList">
+                    <div class="form-group"><input type="number" class="pick-sample" oninput="calculatePickles()" placeholder="وزن العينة 1"></div>
+                    <div class="form-group"><input type="number" class="pick-sample" oninput="calculatePickles()" placeholder="وزن العينة 2"></div>
+                </div>
+            </div>
+            <div class="results-section" id="pickResults" style="display: none;">
+                <h3 class="results-title">النتائج:</h3>
+                <div class="result-box blue">
+                    <div class="result-box-label" id="pickResMinLabel">الاستاندر المعتمد للاستلام</div>
+                    <div class="result-box-value" id="pickResMin">0 كجم</div>
+                </div>
+                <div class="result-box green">
+                    <div class="result-box-label">الكمية الفعلي المعتمدة</div>
+                    <div class="result-box-value" id="pickResActual">0 كجم</div>
+                </div>
+                <div class="result-box orange" id="pickCompBox" style="display: none;">
+                    <div class="result-box-label">التعويض (لعدد الجرادل المصفّاة فقط)</div>
+                    <div class="result-box-value" id="pickResComp">0 كجم</div>
+                </div>
+            </div>
+            <div class="steps-box" id="pickStepsBox">
+                <h4>💡 طريقة ومراحل الحساب:</h4>
+                <ol>
+                    <li>يتم تصفية العينات المختارة وتحديد الوزن الصافي لكل عينة في المعمل، ويجب تحديد وزن استاندر معياري.</li>
+                    <li><b>لو كل العينات أعلى من الاستاندر (بصرامة):</b> يُعتمد الاستاندر اليدوي نفسه كوزن استلام. <code>الفعلي</code> = الاستاندر × الكمية الكلية. <code>تعويض الجردل الواحد</code> = متوسط كل العينات - الاستاندر.</li>
+                    <li><b>لو فيه عينة واحدة على الأقل ≤ الاستاندر:</b> يُعتمد <b>أقل وزن موجود فعلياً</b> بدلاً من الاستاندر اليدوي. <code>الفعلي</code> = أقل وزن × الكمية الكلية. <code>تعويض الجردل الواحد</code> = متوسط كل العينات - أقل وزن.</li>
+                    <li><b>الفرق الجوهري عن المستحلب:</b> <code>التعويض الكلي</code> = تعويض الجردل الواحد × <b>عدد العينات اللي اتصفّت فعلاً فقط</b> (مش الكمية الكلية المستلمة بالشحنة).</li>
+                </ol>
+            </div>
+        </div>
+
 
         <!-- 3. Roumi Cheese Module -->
         <div id="roumiView" class="module-view">
@@ -2864,7 +2923,7 @@
             input.type = 'number';
             input.className = prefix + '-sample';
             input.placeholder = `وزن العينة ${count + 1}`;
-            input.oninput = prefix === 'nat' ? calculateNatural : calculateProcessed;
+            input.oninput = prefix === 'nat' ? calculateNatural : (prefix === 'pick' ? calculatePickles : calculateProcessed);
             wrapper.appendChild(input);
             list.appendChild(wrapper);
         }
@@ -2927,31 +2986,46 @@
             updateNaturalSteps(totalQty, avg, standard, actual, comp);
         }
 
-        function updateProcessedSteps(totalQty, min, avg, actual, comp) {
+        // دالة مشتركة لحساب منطق "الاستاندر اليدوي مقابل أقل وزن" المستخدم في المستحلب والمخللات.
+        // الفرق الوحيد بين الاثنين هو "compQtyMultiplier": الكمية الكلية للمستحلب، وعدد العينات المصفاة فقط للمخللات.
+        function computeStandardBasedResult(samples, totalQty, manualStandard, compQtyMultiplier) {
+            const min = Math.min(...samples);
+            const sum = samples.reduce((acc, curr) => acc + curr, 0);
+            const avg = sum / samples.length;
+            const allStrictlyOverStandard = samples.every(s => s > manualStandard);
+            const appliedStandard = allStrictlyOverStandard ? manualStandard : min;
+            const actual = appliedStandard * totalQty;
+            const compPerUnit = avg - appliedStandard;
+            const comp = compPerUnit * compQtyMultiplier;
+            return { min, avg, allStrictlyOverStandard, appliedStandard, actual, compPerUnit, comp };
+        }
+
+        function updateProcessedSteps(totalQty, manualStandard, r) {
             const box = document.getElementById('procStepsBox');
-            if (isNaN(totalQty) || isNaN(min) || min <= 0) {
+            if (isNaN(totalQty) || isNaN(manualStandard) || manualStandard <= 0 || !r) {
                 box.innerHTML = `
                     <h4>💡 طريقة ومراحل الحساب:</h4>
                     <ol>
-                        <li>يتم تصفية العينات المختارة وتحديد الوزن الصافي لكل عينة في المعمل.</li>
-                        <li>يتم اختيار <b>أقل وزن تصفية</b> بين كل العينات، وهذا الوزن يصبح هو <b>الاستاندر المعتمد</b> لعملية الاستلام بالكامل.</li>
-                        <li><code>الكمية الفعلي</code> = أقل وزن تصفية (الاستاندر) × الكمية الكلية.</li>
-                        <li><b>حساب التعويض (للجرادل الأتقل من الأقل):</b> نجمع كل أوزان التصفية ونقسمها على عددها للحصول على المتوسط، ثم نطرح منه أقل وزن (الاستاندر) للحصول على تعويض الجردل الواحد: <code>تعويض الجردل الواحد = متوسط كل العينات - أقل وزن تصفية</code>. بعدها: <code>التعويض الكلي = تعويض الجردل الواحد × الكمية الكلية</code>.</li>
+                        <li>يتم تصفية العينات المختارة وتحديد الوزن الصافي لكل عينة في المعمل، ويجب تحديد وزن استاندر معياري.</li>
+                        <li><b>لو كل العينات أعلى من الاستاندر (بصرامة):</b> يُعتمد الاستاندر اليدوي نفسه كوزن استلام. <code>الفعلي</code> = الاستاندر × الكمية الكلية. <code>تعويض الجردل الواحد</code> = متوسط كل العينات - الاستاندر. <code>التعويض الكلي</code> = تعويض الجردل الواحد × الكمية الكلية.</li>
+                        <li><b>لو فيه عينة واحدة على الأقل ≤ الاستاندر:</b> يُعتمد <b>أقل وزن موجود فعلياً</b> بدلاً من الاستاندر اليدوي. <code>الفعلي</code> = أقل وزن × الكمية الكلية. <code>تعويض الجردل الواحد</code> = متوسط كل العينات - أقل وزن. <code>التعويض الكلي</code> = تعويض الجردل الواحد × الكمية الكلية.</li>
                     </ol>
                 `;
                 return;
             }
-            const calcActual = min * totalQty;
+            const { min, avg, allStrictlyOverStandard, appliedStandard, actual, compPerUnit, comp } = r;
             let html = `<h4>💡 خطوات الحل الحسابية بالتفصيل:</h4><ol>`;
-            html += `<li><b>تحديد الاستاندر المعتمد (أقل وزن تصفية):</b><br>أقل وزن صافي تم رصده بالعينات هو <code>${min.toFixed(3)}</code> كجم، وهذا الوزن يُعتمد كاستاندر الاستلام للشحنة بالكامل.</li>`;
-            html += `<li><b>حساب الكمية الفعلي المعتمدة:</b><br>الفعلي المعتمد = أقل وزن تصفية (<code>${min.toFixed(3)}</code> كجم) × الكمية الكلية الموردة (<code>${totalQty}</code> جردل/عبوة)<br><code>الفعلي المعتمد</code> = <b><code>${calcActual.toFixed(3)}</code> كجم</b>.</li>`;
+            html += `<li><b>مقارنة العينات بالاستاندر اليدوي المدخل (<code>${manualStandard.toFixed(3)}</code> كجم):</b><br>أقل وزن صافي تم رصده = <code>${min.toFixed(3)}</code> كجم.<br>${allStrictlyOverStandard
+                ? `بما أن <b>كل</b> العينات أعلى من الاستاندر بصرامة: يُعتمد <b>الاستاندر اليدوي نفسه</b> (<code>${manualStandard.toFixed(3)}</code> كجم) كوزن استلام.`
+                : `بما أن فيه عينة واحدة على الأقل أقل من أو تساوي الاستاندر: يُعتمد <b>أقل وزن موجود فعلياً</b> (<code>${min.toFixed(3)}</code> كجم) بدلاً من الاستاندر اليدوي.`}</li>`;
+            html += `<li><b>حساب الكمية الفعلي المعتمدة:</b><br>الفعلي المعتمد = الاستاندر المعتمد (<code>${appliedStandard.toFixed(3)}</code> كجم) × الكمية الكلية الموردة (<code>${totalQty}</code> جردل/عبوة)<br><code>الفعلي المعتمد</code> = <b><code>${actual.toFixed(3)}</code> كجم</b>.</li>`;
             html += `<li><b>حساب متوسط كل العينات الصافي:</b><br>متوسط العينات = مجموع كل أوزان التصفية ÷ عددها = <b><code>${avg.toFixed(3)}</code> كجم</b>.</li>`;
 
             if (comp > 0.0000001) {
-                html += `<li><b>حساب تعويض الجردل الواحد (فرق الجرادل الأتقل من الأقل):</b><br>تعويض الجردل الواحد = متوسط العينات (<code>${avg.toFixed(3)}</code> كجم) - أقل وزن تصفية (<code>${min.toFixed(3)}</code> كجم) = <b><code>${(avg - min).toFixed(3)}</code> كجم</b>.</li>`;
-                html += `<li><b>حساب التعويض الكلي للشحنة:</b><br><code>التعويض الكلي</code> = تعويض الجردل الواحد (<code>${(avg - min).toFixed(3)}</code> كجم) × الكمية الكلية (<code>${totalQty}</code> جردل/عبوة) = <b><code>${comp.toFixed(3)}</code> كجم</b>.</li>`;
+                html += `<li><b>حساب تعويض الجردل الواحد:</b><br>تعويض الجردل الواحد = متوسط العينات (<code>${avg.toFixed(3)}</code> كجم) - الاستاندر المعتمد (<code>${appliedStandard.toFixed(3)}</code> كجم) = <b><code>${compPerUnit.toFixed(3)}</code> كجم</b>.</li>`;
+                html += `<li><b>حساب التعويض الكلي للشحنة:</b><br><code>التعويض الكلي</code> = تعويض الجردل الواحد (<code>${compPerUnit.toFixed(3)}</code> كجم) × الكمية الكلية (<code>${totalQty}</code> جردل/عبوة) = <b><code>${comp.toFixed(3)}</code> كجم</b>.</li>`;
             } else {
-                html += `<li><b>حساب التعويض:</b><br>بما أن متوسط العينات (<code>${avg.toFixed(3)}</code> كجم) يساوي أقل وزن تصفية (كل العينات متساوية)، فلا يوجد فرق يُحسب كتعويض: <b>التعويض = 0.000 كجم</b>.</li>`;
+                html += `<li><b>حساب التعويض:</b><br>بما أن متوسط العينات (<code>${avg.toFixed(3)}</code> كجم) يساوي الاستاندر المعتمد، فلا يوجد فرق يُحسب كتعويض: <b>التعويض = 0.000 كجم</b>.</li>`;
             }
             html += `</ol>`;
             box.innerHTML = html;
@@ -2959,29 +3033,82 @@
 
         function calculateProcessed() {
             const totalQty = parseFloat(document.getElementById('procTotalQty').value);
+            const manualStandard = parseFloat(document.getElementById('procStandard').value);
             const samples = Array.from(document.querySelectorAll('.proc-sample')).map(el => parseFloat(el.value)).filter(n => !isNaN(n) && n > 0);
             const resultsSec = document.getElementById('procResults');
-            if (!totalQty || samples.length === 0) {
+            if (!totalQty || !manualStandard || manualStandard <= 0 || samples.length === 0) {
                 resultsSec.style.display = 'none';
-                updateProcessedSteps(NaN, NaN, NaN, NaN, NaN);
+                updateProcessedSteps(NaN, NaN, null);
                 return;
             }
-            const min = Math.min(...samples);
-            const sum = samples.reduce((acc, curr) => acc + curr, 0);
-            const avg = sum / samples.length;
-            const actual = min * totalQty;
-            const compPerUnit = avg - min;
-            const comp = compPerUnit * totalQty;
-            if (comp > 0.0000001) {
+            const r = computeStandardBasedResult(samples, totalQty, manualStandard, totalQty);
+            if (r.comp > 0.0000001) {
                 document.getElementById('procCompBox').style.display = 'block';
             } else {
                 document.getElementById('procCompBox').style.display = 'none';
             }
-            document.getElementById('procResMin').innerText = min.toFixed(3) + ' كجم';
-            document.getElementById('procResActual').innerText = actual.toFixed(3) + ' كجم';
-            document.getElementById('procResComp').innerText = comp.toFixed(3) + ' كجم';
+            document.getElementById('procResMinLabel').innerText = r.allStrictlyOverStandard ? 'الاستاندر المعتمد (الاستاندر اليدوي)' : 'الاستاندر المعتمد (أقل وزن تصفية)';
+            document.getElementById('procResMin').innerText = r.appliedStandard.toFixed(3) + ' كجم';
+            document.getElementById('procResActual').innerText = r.actual.toFixed(3) + ' كجم';
+            document.getElementById('procResComp').innerText = r.comp.toFixed(3) + ' كجم';
             resultsSec.style.display = 'block';
-            updateProcessedSteps(totalQty, min, avg, actual, comp);
+            updateProcessedSteps(totalQty, manualStandard, r);
+        }
+
+        function updatePicklesSteps(totalQty, sampleCount, manualStandard, r) {
+            const box = document.getElementById('pickStepsBox');
+            if (isNaN(totalQty) || isNaN(manualStandard) || manualStandard <= 0 || !r) {
+                box.innerHTML = `
+                    <h4>💡 طريقة ومراحل الحساب:</h4>
+                    <ol>
+                        <li>يتم تصفية العينات المختارة وتحديد الوزن الصافي لكل عينة في المعمل، ويجب تحديد وزن استاندر معياري.</li>
+                        <li><b>لو كل العينات أعلى من الاستاندر (بصرامة):</b> يُعتمد الاستاندر اليدوي نفسه كوزن استلام. <code>الفعلي</code> = الاستاندر × الكمية الكلية. <code>تعويض الجردل الواحد</code> = متوسط كل العينات - الاستاندر.</li>
+                        <li><b>لو فيه عينة واحدة على الأقل ≤ الاستاندر:</b> يُعتمد <b>أقل وزن موجود فعلياً</b> بدلاً من الاستاندر اليدوي. <code>الفعلي</code> = أقل وزن × الكمية الكلية. <code>تعويض الجردل الواحد</code> = متوسط كل العينات - أقل وزن.</li>
+                        <li><b>الفرق الجوهري عن المستحلب:</b> <code>التعويض الكلي</code> = تعويض الجردل الواحد × <b>عدد العينات اللي اتصفّت فعلاً فقط</b> (مش الكمية الكلية المستلمة بالشحنة).</li>
+                    </ol>
+                `;
+                return;
+            }
+            const { min, avg, allStrictlyOverStandard, appliedStandard, actual, compPerUnit, comp } = r;
+            let html = `<h4>💡 خطوات الحل الحسابية بالتفصيل:</h4><ol>`;
+            html += `<li><b>مقارنة العينات بالاستاندر اليدوي المدخل (<code>${manualStandard.toFixed(3)}</code> كجم):</b><br>أقل وزن صافي تم رصده = <code>${min.toFixed(3)}</code> كجم.<br>${allStrictlyOverStandard
+                ? `بما أن <b>كل</b> العينات أعلى من الاستاندر بصرامة: يُعتمد <b>الاستاندر اليدوي نفسه</b> (<code>${manualStandard.toFixed(3)}</code> كجم) كوزن استلام.`
+                : `بما أن فيه عينة واحدة على الأقل أقل من أو تساوي الاستاندر: يُعتمد <b>أقل وزن موجود فعلياً</b> (<code>${min.toFixed(3)}</code> كجم) بدلاً من الاستاندر اليدوي.`}</li>`;
+            html += `<li><b>حساب الكمية الفعلي المعتمدة:</b><br>الفعلي المعتمد = الاستاندر المعتمد (<code>${appliedStandard.toFixed(3)}</code> كجم) × الكمية الكلية الموردة (<code>${totalQty}</code> جردل/عبوة)<br><code>الفعلي المعتمد</code> = <b><code>${actual.toFixed(3)}</code> كجم</b>.</li>`;
+            html += `<li><b>حساب متوسط كل العينات الصافي:</b><br>متوسط العينات = مجموع كل أوزان التصفية ÷ عددها = <b><code>${avg.toFixed(3)}</code> كجم</b>.</li>`;
+
+            if (comp > 0.0000001) {
+                html += `<li><b>حساب تعويض الجردل الواحد:</b><br>تعويض الجردل الواحد = متوسط العينات (<code>${avg.toFixed(3)}</code> كجم) - الاستاندر المعتمد (<code>${appliedStandard.toFixed(3)}</code> كجم) = <b><code>${compPerUnit.toFixed(3)}</code> كجم</b>.</li>`;
+                html += `<li><b>حساب التعويض الكلي (لعدد العينات المصفّاة فقط، وليس الكمية الكلية):</b><br><code>التعويض الكلي</code> = تعويض الجردل الواحد (<code>${compPerUnit.toFixed(3)}</code> كجم) × عدد العينات المصفّاة (<code>${sampleCount}</code> عينة) = <b><code>${comp.toFixed(3)}</code> كجم</b>.</li>`;
+            } else {
+                html += `<li><b>حساب التعويض:</b><br>بما أن متوسط العينات (<code>${avg.toFixed(3)}</code> كجم) يساوي الاستاندر المعتمد، فلا يوجد فرق يُحسب كتعويض: <b>التعويض = 0.000 كجم</b>.</li>`;
+            }
+            html += `</ol>`;
+            box.innerHTML = html;
+        }
+
+        function calculatePickles() {
+            const totalQty = parseFloat(document.getElementById('pickTotalQty').value);
+            const manualStandard = parseFloat(document.getElementById('pickStandard').value);
+            const samples = Array.from(document.querySelectorAll('.pick-sample')).map(el => parseFloat(el.value)).filter(n => !isNaN(n) && n > 0);
+            const resultsSec = document.getElementById('pickResults');
+            if (!totalQty || !manualStandard || manualStandard <= 0 || samples.length === 0) {
+                resultsSec.style.display = 'none';
+                updatePicklesSteps(NaN, NaN, NaN, null);
+                return;
+            }
+            const r = computeStandardBasedResult(samples, totalQty, manualStandard, samples.length);
+            if (r.comp > 0.0000001) {
+                document.getElementById('pickCompBox').style.display = 'block';
+            } else {
+                document.getElementById('pickCompBox').style.display = 'none';
+            }
+            document.getElementById('pickResMinLabel').innerText = r.allStrictlyOverStandard ? 'الاستاندر المعتمد (الاستاندر اليدوي)' : 'الاستاندر المعتمد (أقل وزن تصفية)';
+            document.getElementById('pickResMin').innerText = r.appliedStandard.toFixed(3) + ' كجم';
+            document.getElementById('pickResActual').innerText = r.actual.toFixed(3) + ' كجم';
+            document.getElementById('pickResComp').innerText = r.comp.toFixed(3) + ' كجم';
+            resultsSec.style.display = 'block';
+            updatePicklesSteps(totalQty, samples.length, manualStandard, r);
         }
 
         function calculateRoumi() {
