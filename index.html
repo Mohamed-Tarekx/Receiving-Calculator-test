@@ -2613,6 +2613,22 @@
 
         // فهرسة أعمدة الشيت بالاعتماد على نص صف العناوين نفسه (مش على رقم عمود ثابت) عشان نضمن الدقة
         // حتى لو تغير ترتيب الأعمدة شوية بين نسخة وأخرى من نفس تنسيق الطباعة.
+        // تطبيع النص العربي للمقارنة المرنة بين عناوين الأعمدة: أنظمة مخازن مختلفة بتصدّر ملفات
+        // إكسيل بأساليب كتابة مختلفة شوية لنفس الكلمة (تاء مربوطة/هاء، ألف بأشكالها، تشكيل، مسافات
+        // زيادة) رغم إنها بتتنطق نفس الشيء بالظبط. بدل ما نضيف كل تنويع نشوفه واحد واحد كل مرة يظهر
+        // ملف بصياغة جديدة، بنشيل الفروق الشكلية دي من الأول قبل أي مقارنة، عشان أي ملف بنفس
+        // التنسيق الأساسي (حتى لو مكتوب بطريقة مختلفة شوية) يشتغل من غير أي تعديل إضافي في الكود.
+        function normalizeArabicHeader(text) {
+            return String(text)
+                .trim()
+                .replace(/[\u064B-\u065F\u0670]/g, '') // إزالة التشكيل (فتحة، ضمة، كسرة، سكون، إلخ)
+                .replace(/ة/g, 'ه')      // تاء مربوطة -> هاء (نفس النطق، خط مختلف)
+                .replace(/[إأآا]/g, 'ا') // كل أنواع الألف (همزة، مدة) -> ألف عادية
+                .replace(/ى/g, 'ي')      // ألف مقصورة -> ياء
+                .replace(/\s+/g, ' ')    // مسافات متعددة أو تابات -> مسافة واحدة
+                .toLowerCase();
+        }
+
         function findDocHeaderRow(rows) {
             for (let i = 0; i < Math.min(rows.length, 20); i++) {
                 const row = rows[i];
@@ -2620,11 +2636,12 @@
                 // نستخدم Array.from بدل .map عشان لو الصف فيه خلايا فاضية (holes) بسبب دمج خلايا
                 // أو تقارير مطبوعة، تتحول لـ '' بدل ما تفضل فراغات (holes) تسبب انهيار عند .includes لاحقاً.
                 const rowText = Array.from(row, c => (c !== undefined && c !== null) ? String(c).trim() : '');
-                const hasM = rowText.some(c => c === 'م');
-                const hasBarcode = rowText.some(c => c.includes('الباركود'));
-                const hasName = rowText.some(c => c.includes('اسم الصنف'));
+                const rowTextNorm = rowText.map(normalizeArabicHeader);
+                const hasM = rowTextNorm.some(c => c === 'م');
+                const hasBarcode = rowTextNorm.some(c => c.includes(normalizeArabicHeader('الباركود')));
+                const hasName = rowTextNorm.some(c => c.includes(normalizeArabicHeader('اسم الصنف')));
                 if (hasM && hasBarcode && hasName) {
-                    return { index: i, rowText };
+                    return { index: i, rowText, rowTextNorm };
                 }
             }
             return null;
@@ -2633,14 +2650,14 @@
         function processDocExcelData(rows) {
             const header = findDocHeaderRow(rows);
             if (!header) return [];
-            const rowText = header.rowText;
-            const mCol = rowText.findIndex(c => c === 'م');
-            const barcodeCol = rowText.findIndex(c => c.includes('الباركود'));
-            const nameCol = rowText.findIndex(c => c.includes('اسم الصنف'));
-            const actualQtyCol = rowText.findIndex(c => c.includes('الكمية الفعلية'));
+            const rowTextNorm = header.rowTextNorm;
+            const mCol = rowTextNorm.findIndex(c => c === 'م');
+            const barcodeCol = rowTextNorm.findIndex(c => c.includes(normalizeArabicHeader('الباركود')));
+            const nameCol = rowTextNorm.findIndex(c => c.includes(normalizeArabicHeader('اسم الصنف')));
+            const actualQtyCol = rowTextNorm.findIndex(c => c.includes(normalizeArabicHeader('الكمية الفعلية')));
             // عمود "كمية بونص" - أحياناً بيتسجل فيه رقم بالغلط بدل خانة الكمية الفعلية، فبنجمعه
             // مع الكمية الفعلية ونعتبر الاتنين مع بعض هما الكمية الفعلية الحقيقية للصنف.
-            const bonusQtyCol = rowText.findIndex(c => c.includes('بونص'));
+            const bonusQtyCol = rowTextNorm.findIndex(c => c.includes(normalizeArabicHeader('بونص')));
 
             const items = [];
             for (let i = header.index + 1; i < rows.length; i++) {
