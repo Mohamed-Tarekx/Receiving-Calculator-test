@@ -1319,7 +1319,7 @@
             <div class="form-group">
                 <label>بحث بالباركود أو كود المورد أو اسم الصنف</label>
                 <div class="search-with-clear">
-                    <input type="text" id="taresSearchInput" placeholder="مثال: 2300011000005 أو 553" oninput="onTaresSearchInput(); toggleClearBtn('taresSearchInput','taresSearchClearBtn');">
+                    <input type="text" id="taresSearchInput" placeholder="مثال: 2300011000005 أو 553" oninput="searchTares(); toggleClearBtn('taresSearchInput','taresSearchClearBtn');">
                     <button type="button" id="taresSearchClearBtn" class="search-clear-btn" onclick="clearSearchInput('taresSearchInput','taresSearchClearBtn', searchTares)">✕</button>
                 </div>
             </div>
@@ -1327,7 +1327,7 @@
             <div class="form-group">
                 <label>تحديد كود المورد (اختياري - لتضييق نتائج البحث فقط على مورد معين)</label>
                 <div class="search-with-clear">
-                    <input type="text" id="taresSupplierFilterInput" placeholder="مثال: 553 (اتركه فارغاً لو مش عايز تحديد)" inputmode="numeric" oninput="onTaresSearchInput(); toggleClearBtn('taresSupplierFilterInput','taresSupplierFilterClearBtn');">
+                    <input type="text" id="taresSupplierFilterInput" placeholder="مثال: 553 (اتركه فارغاً لو مش عايز تحديد)" inputmode="numeric" oninput="searchTares(); toggleClearBtn('taresSupplierFilterInput','taresSupplierFilterClearBtn');">
                     <button type="button" id="taresSupplierFilterClearBtn" class="search-clear-btn" onclick="clearSearchInput('taresSupplierFilterInput','taresSupplierFilterClearBtn', searchTares)">✕</button>
                 </div>
             </div>
@@ -2011,26 +2011,14 @@
             reader.readAsArrayBuffer(file);
         }
 
-        // دي بتأخر تنفيذ البحث لحد ما المستخدم يوقف عن الكتابة لفترة قصيرة (Debounce)
-        // عشان نتفادى تهنيج الكتابة والمسح لما يعيد بناء نتائج البحث بالكامل مع كل حرف بيتكتب.
-        let taresSearchDebounceTimer = null;
-        function onTaresSearchInput() {
-            if (taresSearchDebounceTimer) {
-                clearTimeout(taresSearchDebounceTimer);
-            }
-            taresSearchDebounceTimer = setTimeout(() => {
-                searchTares();
-                taresSearchDebounceTimer = null;
-            }, 250);
-        }
-
         function searchTares() {
             const input = document.getElementById('taresSearchInput').value.trim().toLowerCase();
             const supplierFilterEl = document.getElementById('taresSupplierFilterInput');
             const supplierFilter = supplierFilterEl ? supplierFilterEl.value.trim().toLowerCase() : '';
             const resultsSec = document.getElementById('taresResults');
             const contentDiv = document.getElementById('taresResultContent');
-            if (input.length === 0) {
+            // لو الخانتين فاضيين مفيش داعي نعرض أي حاجة. لكن لو أي واحدة فيهم فيها نص (حتى لو التانية فاضية) نكمل البحث.
+            if (input.length === 0 && supplierFilter.length === 0) {
                 resultsSec.style.display = 'none';
                 return;
             }
@@ -2041,19 +2029,33 @@
                 return;
             }
             const db = JSON.parse(dbStr);
-            let matches = db.filter(item =>
-                (item.barcode && item.barcode.toLowerCase().includes(input)) ||
-                (item.supplierCode && item.supplierCode.toLowerCase().includes(input)) ||
-                (item.itemName && item.itemName.toLowerCase().includes(input))
-            );
-            // فلترة إضافية اختيارية بكود المورد: لو المستخدم حدد كود مورد، نضيق النتائج على الأصناف
+            // لو خانة البحث الأساسية فاضية وفيه كود مورد محدد: نعرض كل أصناف المورد ده فوراً.
+            // لو فيها نص: نبحث بالباركود/كود المورد/اسم الصنف زي المعتاد.
+            let matches = input.length === 0
+                ? db.slice()
+                : db.filter(item =>
+                    (item.barcode && item.barcode.toLowerCase().includes(input)) ||
+                    (item.supplierCode && item.supplierCode.toLowerCase().includes(input)) ||
+                    (item.itemName && item.itemName.toLowerCase().includes(input))
+                );
+            // فلترة إضافية بكود المورد: لو المستخدم حدد كود مورد، نضيق النتائج على الأصناف
             // اللي كود موردها يطابق (يحتوي على) الكود المكتوب فقط - عشان نحل مشكلة تشابه الباركود بين موردين مختلفين.
             if (supplierFilter.length > 0) {
                 matches = matches.filter(item => item.supplierCode && item.supplierCode.toLowerCase().includes(supplierFilter));
             }
             if (matches.length > 0) {
+                // كل صندوق نتيجة فيه فورم حساب الصافي كامل، فرسم عدد كبير منهم دفعة واحدة مع كل حرف
+                // هو السبب الرئيسي للتهنيج - فبنعرض أول 40 نتيجة بس فوراً، ولو فيه نتائج زيادة بنطلب
+                // من المستخدم يضيق البحث أكتر (بإضافة كود المورد أو حروف أكتر) عشان يشوف الصنف اللي محتاجه بسرعة.
+                const MAX_RENDERED_RESULTS = 40;
+                const totalMatches = matches.length;
+                const truncated = totalMatches > MAX_RENDERED_RESULTS;
+                const renderedMatches = truncated ? matches.slice(0, MAX_RENDERED_RESULTS) : matches;
                 let html = '';
-                matches.forEach((m, idx) => {
+                if (truncated) {
+                    html += `<div class="alert-banner yellow">⚠️ فيه ${totalMatches} نتيجة مطابقة - بنعرضلك أول ${MAX_RENDERED_RESULTS}. ضيّق البحث أكتر (بإضافة كود المورد أو حروف زيادة) عشان تشوف الصنف اللي محتاجه بسرعة.</div>`;
+                }
+                renderedMatches.forEach((m, idx) => {
                     const notesHtml = m.notes
                         ? `<div style="margin-top: 8px; font-size: 0.85rem; color: #92400e; background:#fffbeb; border:1px solid #fde68a; border-radius:8px; padding:8px;">📝 ملاحظة: ${m.notes}</div>`
                         : '';
