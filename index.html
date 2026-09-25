@@ -1317,10 +1317,18 @@
             </div>
 
             <div class="form-group">
-                <label>بحث بالباركود أو كود المورد</label>
+                <label>بحث بالباركود أو كود المورد أو اسم الصنف</label>
                 <div class="search-with-clear">
-                    <input type="text" id="taresSearchInput" placeholder="مثال: 2300011000005 أو 553" oninput="searchTares(); toggleClearBtn('taresSearchInput','taresSearchClearBtn');">
+                    <input type="text" id="taresSearchInput" placeholder="مثال: 2300011000005 أو 553" oninput="onTaresSearchInput(); toggleClearBtn('taresSearchInput','taresSearchClearBtn');">
                     <button type="button" id="taresSearchClearBtn" class="search-clear-btn" onclick="clearSearchInput('taresSearchInput','taresSearchClearBtn', searchTares)">✕</button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>تحديد كود المورد (اختياري - لتضييق نتائج البحث فقط على مورد معين)</label>
+                <div class="search-with-clear">
+                    <input type="text" id="taresSupplierFilterInput" placeholder="مثال: 553 (اتركه فارغاً لو مش عايز تحديد)" inputmode="numeric" oninput="onTaresSearchInput(); toggleClearBtn('taresSupplierFilterInput','taresSupplierFilterClearBtn');">
+                    <button type="button" id="taresSupplierFilterClearBtn" class="search-clear-btn" onclick="clearSearchInput('taresSupplierFilterInput','taresSupplierFilterClearBtn', searchTares)">✕</button>
                 </div>
             </div>
 
@@ -2003,8 +2011,23 @@
             reader.readAsArrayBuffer(file);
         }
 
+        // دي بتأخر تنفيذ البحث لحد ما المستخدم يوقف عن الكتابة لفترة قصيرة (Debounce)
+        // عشان نتفادى تهنيج الكتابة والمسح لما يعيد بناء نتائج البحث بالكامل مع كل حرف بيتكتب.
+        let taresSearchDebounceTimer = null;
+        function onTaresSearchInput() {
+            if (taresSearchDebounceTimer) {
+                clearTimeout(taresSearchDebounceTimer);
+            }
+            taresSearchDebounceTimer = setTimeout(() => {
+                searchTares();
+                taresSearchDebounceTimer = null;
+            }, 250);
+        }
+
         function searchTares() {
             const input = document.getElementById('taresSearchInput').value.trim().toLowerCase();
+            const supplierFilterEl = document.getElementById('taresSupplierFilterInput');
+            const supplierFilter = supplierFilterEl ? supplierFilterEl.value.trim().toLowerCase() : '';
             const resultsSec = document.getElementById('taresResults');
             const contentDiv = document.getElementById('taresResultContent');
             if (input.length === 0) {
@@ -2018,11 +2041,16 @@
                 return;
             }
             const db = JSON.parse(dbStr);
-            const matches = db.filter(item =>
+            let matches = db.filter(item =>
                 (item.barcode && item.barcode.toLowerCase().includes(input)) ||
                 (item.supplierCode && item.supplierCode.toLowerCase().includes(input)) ||
                 (item.itemName && item.itemName.toLowerCase().includes(input))
             );
+            // فلترة إضافية اختيارية بكود المورد: لو المستخدم حدد كود مورد، نضيق النتائج على الأصناف
+            // اللي كود موردها يطابق (يحتوي على) الكود المكتوب فقط - عشان نحل مشكلة تشابه الباركود بين موردين مختلفين.
+            if (supplierFilter.length > 0) {
+                matches = matches.filter(item => item.supplierCode && item.supplierCode.toLowerCase().includes(supplierFilter));
+            }
             if (matches.length > 0) {
                 let html = '';
                 matches.forEach((m, idx) => {
@@ -2104,10 +2132,13 @@
                 });
                 contentDiv.innerHTML = html;
             } else {
+                const noResultsMsg = supplierFilter.length > 0
+                    ? 'مفيش صنف مطابق للباركود/الكود ده لكود المورد اللي حددته. جرب تمسح كود المورد أو تتأكد منه.'
+                    : 'مفيش صنف مطابق للكود أو الباركود ده في قاعدة البيانات.';
                 contentDiv.innerHTML = `
                     <div class="result-box red">
                         <div class="result-box-label">لا توجد نتائج</div>
-                        <div class="result-box-value" style="font-size: 1rem;">مفيش صنف مطابق للكود أو الباركود ده في قاعدة البيانات.</div>
+                        <div class="result-box-value" style="font-size: 1rem;">${noResultsMsg}</div>
                     </div>
                 `;
             }
@@ -3092,6 +3123,7 @@
         function syncAllSearchClearBtns() {
             toggleClearBtn('companySearchInput', 'companySearchClearBtn');
             toggleClearBtn('taresSearchInput', 'taresSearchClearBtn');
+            toggleClearBtn('taresSupplierFilterInput', 'taresSupplierFilterClearBtn');
             toggleClearBtn('docSearchInput', 'docSearchClearBtn');
         }
 
