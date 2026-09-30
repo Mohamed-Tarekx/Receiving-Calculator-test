@@ -703,6 +703,12 @@
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
+        .steps-collapse { padding: 0; margin-top: 16px; }
+        .steps-collapse summary { cursor: pointer; list-style: none; padding: 12px 16px; font-weight: 800; color: var(--dark-header); font-size: 0.95rem; display: flex; align-items: center; justify-content: space-between; }
+        .steps-collapse summary::-webkit-details-marker { display: none; }
+        .steps-collapse summary::after { content: '▾'; color: var(--primary); font-size: 1.2rem; transition: transform 0.2s; }
+        .steps-collapse details[open] summary::after { transform: rotate(180deg); }
+        .steps-collapse ol { padding: 0 34px 12px 16px; }
     </style>
 </head>
 <body oncontextmenu="return false;">
@@ -1402,14 +1408,17 @@
             <div class="module-header">
                 <button class="back-btn" onclick="goHome()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
                 <span class="module-title">بحث في إذن الصرف</span>
-                <button id="docCancelBtn" onclick="confirmCancelDocSession()" style="display:none; margin-right:auto; background:var(--danger-bg); border:1px solid var(--danger-border); color:var(--danger); border-radius:8px; padding:8px 12px; font-weight:bold; font-size:0.85rem; cursor:pointer;">✕ إلغاء الإذن</button>
+                <button id="docCancelBtn" onclick="openDocCancelMenu()" style="display:none; margin-right:auto; background:var(--danger-bg); border:1px solid var(--danger-border); color:var(--danger); border-radius:8px; padding:8px 12px; font-weight:bold; font-size:0.85rem; cursor:pointer;">✕ إلغاء الإذن</button>
             </div>
-            <div class="info-box">
-                ارفع ملف إكسيل إذن الصرف (نفس التنسيق الثابت اللي بيتطبع بيه من النظام - بيقبل صيغة .xls القديمة و.xlsx، وبيحاول يصلح الملف تلقائياً لو كان فيه عيب في بنيته). اكتب <b>آخر أرقام من الباركود</b> في خانة البحث، والبرنامج هيطلعلك رقم الصنف (عمود م)، اسم الصنف، والكمية الفعلية لأي صنف باركوده بينتهي بنفس الأرقام اللي كتبتها بالظبط (مش أي مكان في الباركود). <b>الكمية الفعلية المعروضة = الكمية الفعلية + كمية البونص</b> (لو حصل وكان فيه رقم متسجل بالغلط في خانة البونص، البرنامج بيجمعه تلقائياً مع الفعلي). تقدر تعلّم على أي صنف استلمته كامل أو تسجل كمية جزئية لقيتها دلوقتي، والتقدم ده بيتحفظ تلقائياً على الجهاز لحد ما تلغي الإذن.
-            </div>
-
-            <div class="form-group" id="docUploadGroup" style="background: #f8fafc; padding: 16px; border-radius: 12px; border: 1px dashed #cbd5e1; margin-bottom: 24px;">
-                <label style="color: var(--primary-dark); font-size: 0.95rem; margin-bottom: 10px;">رفع ملف إذن الصرف (إكسيل)</label>
+                        <div class="form-group" id="docUploadGroup" style="background: #f8fafc; padding: 16px; border-radius: 12px; border: 1px dashed #cbd5e1; margin-bottom: 24px;">
+                <div id="docModeSegment">
+                    <label style="color: var(--primary-dark); font-size: 0.95rem; margin-bottom: 10px;">هتضيف كام إذن؟</label>
+                    <div class="segment-control" style="margin-bottom: 14px;">
+                        <button id="segmentDocSingle" class="segment-btn active" onclick="setDocMode('single')">إذن واحد</button>
+                        <button id="segmentDocMulti" class="segment-btn" onclick="setDocMode('multi')">عدة أذونات</button>
+                    </div>
+                </div>
+                <label id="docUploadLabel" style="color: var(--primary-dark); font-size: 0.95rem; margin-bottom: 10px;">رفع ملف إذن الصرف (إكسيل)</label>
                 <input type="file" id="docExcelFile" accept=".xlsx, .xls, .csv" onchange="handleDocExcelUpload(event)" style="padding: 10px; font-size: 0.9rem; background: #fff;">
             </div>
 
@@ -1431,21 +1440,26 @@
 
             <div id="docSearchResults"></div>
 
-            <div class="steps-box" id="docSearchStepsBox">
-                <h4>💡 طريقة الاستخدام:</h4>
-                <ol>
-                    <li>ارفع ملف إذن الصرف بصيغة إكسيل (نفس شكله المطبوع من النظام، بدون أي تعديل في ترتيب الأعمدة).</li>
-                    <li>اكتب آخر أرقام من الباركود في خانة البحث (مش لازم الباركود كامل). البرنامج بيدور فقط على الأصناف اللي باركودها بينتهي بنفس الأرقام دي بالظبط، مش أي صنف باركوده فيه نفس الأرقام في أي مكان.</li>
-                    <li>لو أكتر من صنف نهايته نفس الأرقام، هيظهرلك كل الأصناف المطابقة مع رقمها بعمود "م" واسمها وكميتها الفعلية.</li>
-                    <li>لو استلمت الصنف بكامل كميته، دوس زرار "✓ استلمنا الكمية كاملة" - هيفضل متعلّم عليه طول الإذن حتى لو دورت عليه تاني أو قفلت البرنامج.</li>
-                    <li>لو لقيت جزء بس من الكمية دلوقتي، اكتب العدد في خانة "تسجيل كمية جزئية" ودوس "إضافة" - كل مرة تضيف رقم بيتجمع على اللي قبله ويتسجل الهيستوري (مثلاً 2 + 3 = 5)، وتقدر تدوس "تعديل" في أي وقت عشان تمسح الهيستوري وتكتب رقم جديد من الأول.</li>
-                    <li>لو حاولت تضيف كمية جزئية هتخلي الإجمالي المسجل أكبر من الكمية الفعلية بالإذن، البرنامج هيحذرك قبل ما يكمل، ولو أكدت هيتلوّن الصنف باللون البرتقالي عشان يبان إنه محتاج مراجعة.</li>
-                    <li>دوس زرار "📋 عرض الأصناف الناقصة والمتجاوزة" في أي وقت عشان تشوف كل الأصناف اللي لسه ماخدتش كامل كميتها، وكمان الأصناف اللي اتسجل لها كمية أكبر من المفروض.</li>
-                    <li>البيانات والتقدم بتتحفظ أوتوماتيك على الجهاز. لو عايز تقفل الإذن الحالي وتبدأ واحد جديد، دوس زرار "✕ إلغاء الإذن" اللي بيظهر فوق.</li>
-                </ol>
+            <div class="steps-box steps-collapse" id="docSearchStepsBox">
+                <details>
+                    <summary>💡 طريقة الاستخدام (دوس للقراءة)</summary>
+                    <ol>
+                        <li>ارفع ملف إذن الصرف إكسيل (.xls أو .xlsx) بنفس شكله المطبوع من النظام. لو جالك أكتر من إذن اختار "عدة أذونات" قبل الرفع.</li>
+                        <li>رقم المستند بيتقرا تلقائياً ويظهر في شارة فوق وفي كل نتيجة. لو مقدرش يلاقيه هيطلب منك تكتبه.</li>
+                        <li>اكتب آخر أرقام من الباركود (بيدور في كل الأذونات، وبينتهي بنفس الأرقام بالظبط). الكمية الفعلية المعروضة = الفعلية + البونص. الأذونات الناقصة بتظهر الأول.</li>
+                        <li>"✓ استلمنا الكمية كاملة" بيعلّم الصنف مكتمل. "➕ جزئي" بيسجل كمية لقيتها دلوقتي وبتتجمع على اللي قبلها (2 + 3 = 5)، و"تعديل" بيمسح الهيستوري. لو الإجمالي عدّى الفعلية بيحذرك وبيتلوّن برتقالي.</li>
+                        <li>"عرض كل الأصناف" و"الأصناف الناقصة": بتختار الإذن الأول (وجنبه الأعداد)، وجواه بحث بالاسم حرف بحرف وزرار رجوع ثابت فوق.</li>
+                        <li>التقدم بيتحفظ تلقائياً. "✕ إلغاء الإذن" بيسألك تلغي أنهي إذن أو كل الأذونات.</li>
+                    </ol>
+                </details>
             </div>
         </div>
         </div>
+
+    <!-- نافذة اختيار الإذن المراد إلغاؤه -->
+    <div id="docCancelModal" style="display:none; position:fixed; inset:0; background:rgba(17,24,39,0.85); z-index:2000; align-items:center; justify-content:center; padding:20px;">
+        <div id="docCancelModalBody" style="background:#ffffff; border-radius:16px; padding:22px; max-width:340px; width:100%; max-height:80vh; overflow-y:auto; box-shadow:0 20px 25px -5px rgba(0,0,0,0.3);"></div>
+    </div>
 
     <!-- Notification Toast system -->
     <div id="appToast" class="app-toast"></div>
@@ -2595,27 +2609,34 @@
 
         window.addEventListener('DOMContentLoaded', populateVacuumItemSelect);
 
-        // --- DOCUMENT SEARCH MODULE (بحث في إذن الصرف) - قائم على رفع ملف إكسيل الإذن مباشرة ---
-        // كل صف في الشيت بيمثل صنف واحد بالأعمدة الثابتة: م / الباركود / اسم الصنف / الكمية الفعلية
-        // (نفس تنسيق الطباعة الأصلي من نظام المخازن، بترتيب أعمدة ثابت حتى لو البيانات بتتغير كل مرة).
-        //
-        // نظام تتبع الاستلام: بيتحفظ في localStorage تحت مفتاح ثابت (DOC_SESSION_KEY) مربوط بالإذن الحالي.
-        // كل صنف بيتحدد بمفتاح فريد = رقم "م" (لأنه فريد داخل كل إذن)، وبيتسجل له:
-        //   - checked: هل اتعلّم عليه كـ"استلمنا الكمية كاملة"
-        //   - partialQty: مجموع الكميات الجزئية المسجلة لحد دلوقتي
-        //   - partialHistory: مصفوفة الأرقام اللي اتضافت بالترتيب (لعرض "2 + 3 = 5")
-        // التخزين بيتحدث فوراً مع أي تغيير عشان يفضل التقدم موجود حتى لو المستخدم قفل المتصفح فجأة.
-        const DOC_SESSION_KEY = 'docSearchSession_v1';
-        let docItems = []; // { mNumber, barcode, itemName, actualQty }
-        let docFileLoaded = false;
-        let docProgress = {}; // { [mNumber]: { checked: bool, partialQty: number, partialHistory: number[] } }
+        // --- DOCUMENT SEARCH MODULE (بحث في إذن الصرف) - يدعم إذن واحد أو عدة أذونات ---
+        // كل إذن = { id, docNo, docDate, fileName, items:[{mNumber,barcode,itemName,actualQty}], progress:{[م]:{checked,partialQty,partialHistory}} }
+        // التقدم متخزن جوه كل إذن لوحده، فأرقام "م" ما بتتلخبطش بين الأذونات. بيتحفظ في localStorage فوراً مع أي تغيير.
+        const DOC_SESSION_KEY = 'docSearchSession_v2';
+        const DOC_SESSION_KEY_V1 = 'docSearchSession_v1';
+        let docs = [];
+        let docMode = 'single'; // 'single' | 'multi'
+        // حالة شاشتين التصفح (كل الأصناف / الناقصة): ظاهرة ولا لأ، الإذن المفتوح، نص البحث بالاسم
+        const docBrowse = { full: { vis: false, docId: null, q: '' }, pending: { vis: false, docId: null, q: '' } };
+        const docOpenPartial = new Set(); // مفاتيح الأصناف اللي خانة الجزئي مفتوحة فيها
+
+        function newDocId() { return 'd' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+        function escHtml(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+        function toEnglishDigits(s) {
+            return String(s).replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d));
+        }
+        function getDocById(id) { return docs.find(d => d.id === id); }
+        function getProgress(doc, m) {
+            if (!doc.progress[m]) doc.progress[m] = { checked: false, partialQty: 0, partialHistory: [] };
+            return doc.progress[m];
+        }
+        function docBadgeHtml(doc) {
+            return `<span style="display:inline-block; background:var(--dark-header); color:#fff; border-radius:20px; padding:3px 10px; font-size:0.8rem; font-weight:800;">📄 إذن رقم ${escHtml(doc.docNo || 'غير محدد')}</span>`;
+        }
 
         function saveDocSession() {
             try {
-                localStorage.setItem(DOC_SESSION_KEY, JSON.stringify({
-                    items: docItems,
-                    progress: docProgress
-                }));
+                localStorage.setItem(DOC_SESSION_KEY, JSON.stringify({ docs: docs, mode: docMode }));
             } catch (err) {
                 console.error('تعذر حفظ تقدم الإذن', err);
             }
@@ -2624,24 +2645,45 @@
         function loadDocSession() {
             try {
                 const raw = localStorage.getItem(DOC_SESSION_KEY);
-                if (!raw) return false;
-                const parsed = JSON.parse(raw);
-                if (!parsed || !Array.isArray(parsed.items) || parsed.items.length === 0) return false;
-                docItems = parsed.items;
-                docProgress = parsed.progress || {};
-                docFileLoaded = true;
-                return true;
+                if (raw) {
+                    const p = JSON.parse(raw);
+                    if (p && Array.isArray(p.docs) && p.docs.length > 0) {
+                        docs = p.docs;
+                        docMode = p.mode === 'multi' ? 'multi' : 'single';
+                        return true;
+                    }
+                }
+                // ترحيل جلسة إذن واحد قديمة (النسخة السابقة) لو موجودة
+                const old = localStorage.getItem(DOC_SESSION_KEY_V1);
+                if (old) {
+                    const p = JSON.parse(old);
+                    if (p && Array.isArray(p.items) && p.items.length > 0) {
+                        docs = [{ id: newDocId(), docNo: '', docDate: '', fileName: '', items: p.items, progress: p.progress || {} }];
+                        docMode = 'single';
+                        saveDocSession();
+                        localStorage.removeItem(DOC_SESSION_KEY_V1);
+                        return true;
+                    }
+                }
             } catch (err) {
                 console.error('تعذر استرجاع تقدم الإذن المحفوظ', err);
-                return false;
             }
+            return false;
         }
 
-        function getProgressFor(mNumber) {
-            if (!docProgress[mNumber]) {
-                docProgress[mNumber] = { checked: false, partialQty: 0, partialHistory: [] };
-            }
-            return docProgress[mNumber];
+        // حالة الصنف: هل لسه مطلوب استلامه؟ (مش متعلّم عليه ولا كميته الجزئية وصلت للفعلية)
+        function isItemOpen(doc, it) {
+            const p = getProgress(doc, it.mNumber);
+            if (p.checked) return false;
+            const a = parseFloat(it.actualQty);
+            if (!isNaN(a) && p.partialQty >= a) return false;
+            return true;
+        }
+        function getItemReceived(doc, it) {
+            const p = getProgress(doc, it.mNumber);
+            const a = parseFloat(it.actualQty);
+            if (p.checked && !isNaN(a)) return a;
+            return p.partialQty || 0;
         }
 
         // فهرسة أعمدة الشيت بالاعتماد على نص صف العناوين نفسه (مش على رقم عمود ثابت) عشان نضمن الدقة
@@ -2732,195 +2774,338 @@
             return items;
         }
 
-        function handleDocExcelUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const { workbook, wasRepaired } = readWorkbookWithAutoRepair(e.target.result);
-                    const firstSheetName = workbook.SheetNames[0];
-                    const worksheet = workbook.Sheets[firstSheetName];
-                    const rows = XLSX.utils.sheet_to_json(worksheet, {header: 1});
-                    const items = processDocExcelData(rows);
-                    if (items.length === 0) {
-                        showNotification("لم يتم العثور على بيانات صالحة! تأكد من أن الملف بنفس تنسيق إذن الصرف الأصلي.");
-                        docFileLoaded = false;
-                        renderDocStatus();
-                        return;
+        
+        // استخراج رقم المستند وتاريخه من الصفوف اللي فوق صف العناوين (مفيش حد ثابت لعدد الصفوف).
+        // الرقم عادةً في نفس الخلية مع الكلمة: "[ تاريخ المستند : 2026/09/28 ][رقم المستند :3809]"،
+        // ولو الخلية فيها الكلمة بس بندور على الرقم في أول خلية تانية جنبها. الأرقام العربي بتتحول لإنجليزي.
+        function extractDocMeta(rows, headerIndex) {
+            const meta = { docNo: '', docDate: '' };
+            const limit = headerIndex >= 0 ? headerIndex : Math.min(rows.length, 40);
+            const labelRe = /رقم\s*(?:ال)?(?:مستند|اذن)\s*[:：\-]?\s*(\d+)?/;
+            const dateRe = /تاريخ\s*(?:ال)?مستند\s*[:：]?\s*(\d{2,4}[\/\-]\d{1,2}[\/\-]\d{1,4})/;
+            for (let i = 0; i < limit; i++) {
+                const row = rows[i];
+                if (!row) continue;
+                const cells = Array.from(row, c => (c !== undefined && c !== null)
+                    ? toEnglishDigits(String(c)).replace(/[\u064B-\u065F\u0670\u0640]/g, '').replace(/[إأآ]/g, 'ا')
+                    : '');
+                for (let c = 0; c < cells.length; c++) {
+                    const txt = cells[c];
+                    if (!meta.docDate) {
+                        const dm = txt.match(dateRe);
+                        if (dm) meta.docDate = dm[1];
                     }
-                    docItems = items;
-                    docProgress = {};
-                    docFileLoaded = true;
-                    docPendingListVisible = false;
-                    saveDocSession();
-                    renderDocStatus();
-                    renderDocPendingList();
-                    renderDocFullList();
-                    showNotification(wasRepaired
-                        ? `تم إصلاح الملف تلقائياً وتحميل الإذن بنجاح! تم استخراج ${items.length} صنف.`
-                        : `تم تحميل الإذن بنجاح! تم استخراج ${items.length} صنف.`);
-                    event.target.value = '';
-                    searchDocPages();
+                    if (!meta.docNo) {
+                        const m = txt.match(labelRe);
+                        if (m) {
+                            if (m[1]) {
+                                meta.docNo = m[1];
+                            } else {
+                                for (let k = c + 1; k < cells.length; k++) {
+                                    const nx = cells[k].trim();
+                                    if (!nx) continue;
+                                    const dn = nx.match(/^\D{0,3}(\d+)\D{0,3}$/);
+                                    if (dn) meta.docNo = dn[1];
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+                if (meta.docNo && meta.docDate) break;
+            }
+            return meta;
+        }
+
+        function readFileAsBuffer(file) {
+            return new Promise((resolve, reject) => {
+                const r = new FileReader();
+                r.onload = e => resolve(e.target.result);
+                r.onerror = () => reject(r.error);
+                r.readAsArrayBuffer(file);
+            });
+        }
+
+        function setDocMode(mode) {
+            docMode = mode === 'multi' ? 'multi' : 'single';
+            renderDocStatus();
+        }
+
+        async function handleDocExcelUpload(event) {
+            const files = Array.from(event.target.files || []);
+            if (files.length === 0) return;
+            let added = 0, failed = 0, repaired = false;
+            const dups = [];
+            for (const file of files) {
+                try {
+                    const { workbook, wasRepaired } = readWorkbookWithAutoRepair(await readFileAsBuffer(file));
+                    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                    const items = processDocExcelData(rows);
+                    if (items.length === 0) { failed++; continue; }
+                    const header = findDocHeaderRow(rows);
+                    const meta = extractDocMeta(rows, header ? header.index : -1);
+                    let docNo = meta.docNo;
+                    if (!docNo) {
+                        const typed = window.prompt(`مقدرتش ألاقي رقم المستند في الملف "${file.name}".\nاكتب رقم المستند:`, '');
+                        docNo = (typed && typed.trim()) ? toEnglishDigits(typed.trim()) : file.name.replace(/\.[^.]+$/, '');
+                    }
+                    if (docs.some(d => d.docNo === docNo)) { dups.push(docNo); continue; }
+                    docs.push({ id: newDocId(), docNo: docNo, docDate: meta.docDate, fileName: file.name, items: items, progress: {} });
+                    added++;
+                    if (wasRepaired) repaired = true;
                 } catch (err) {
                     console.error(err);
-                    showNotification("حدث خطأ أثناء قراءة الملف، تأكد من أنه بصيغة Excel صالحة.");
-                    docFileLoaded = false;
-                    renderDocStatus();
+                    failed++;
                 }
-            };
-            reader.readAsArrayBuffer(file);
+            }
+            event.target.value = '';
+            if (added > 0) {
+                saveDocSession();
+                docBrowse.full.docId = null; docBrowse.pending.docId = null;
+            }
+            renderDocAll();
+            let msg = '';
+            if (added > 0) msg += (repaired ? 'تم إصلاح الملف وتحميل ' : 'تم تحميل ') + (added === 1 ? 'الإذن' : `${added} أذونات`) + ' بنجاح. ';
+            if (dups.length > 0) msg += `الإذن رقم ${dups.join('، ')} متحمّل بالفعل فاتخطّيته. `;
+            if (failed > 0) msg += `${failed} ملف مش بنفس تنسيق إذن الصرف الأصلي فمتحملش.`;
+            showNotification(msg.trim() || 'لم يتم تحميل أي إذن.');
+        }
+
+        function renderDocAll() {
+            // نحافظ على مكان الشاشة الحالي بعد أي إعادة رسم، عشان المستخدم ما يترمّيش لأول الصفحة
+            const y = window.scrollY;
+            renderDocStatus();
+            renderDocPendingList();
+            renderDocFullList();
+            searchDocPages();
+            window.scrollTo(0, y);
         }
 
         function renderDocStatus() {
             const statusEl = document.getElementById('docPagesStatus');
             const searchGroup = document.getElementById('docSearchGroup');
             const uploadGroup = document.getElementById('docUploadGroup');
+            const modeSeg = document.getElementById('docModeSegment');
+            const uploadLabel = document.getElementById('docUploadLabel');
+            const fileInput = document.getElementById('docExcelFile');
             const cancelBtn = document.getElementById('docCancelBtn');
             const fullListBtn = document.getElementById('docFullListToggleBtn');
             if (!statusEl) return;
-            if (!docFileLoaded || docItems.length === 0) {
+            const segS = document.getElementById('segmentDocSingle');
+            const segM = document.getElementById('segmentDocMulti');
+            if (segS) segS.classList.toggle('active', docMode === 'single');
+            if (segM) segM.classList.toggle('active', docMode === 'multi');
+            if (fileInput) fileInput.multiple = (docMode === 'multi');
+
+            if (docs.length === 0) {
                 statusEl.innerHTML = '';
                 if (searchGroup) searchGroup.style.display = 'none';
                 if (uploadGroup) uploadGroup.style.display = 'block';
+                if (modeSeg) modeSeg.style.display = 'block';
+                if (uploadLabel) uploadLabel.innerText = docMode === 'multi' ? 'رفع ملفات أذونات الصرف (تقدر تختار أكتر من ملف)' : 'رفع ملف إذن الصرف (إكسيل)';
                 if (cancelBtn) cancelBtn.style.display = 'none';
                 if (fullListBtn) fullListBtn.style.display = 'none';
                 return;
             }
-            const checkedCount = Object.values(docProgress).filter(p => p && p.checked).length;
-            statusEl.innerHTML = `<div class="alert-banner green" style="background-color: var(--success-bg); border-color: var(--success-border); color: #065f46;">✅ الإذن محمّل (${docItems.length} صنف) — تم استلام ${checkedCount} صنف بالكامل لحد دلوقتي</div>`;
+            let totalItems = 0, checkedTotal = 0;
+            docs.forEach(d => {
+                totalItems += d.items.length;
+                d.items.forEach(it => { if (getProgress(d, it.mNumber).checked) checkedTotal++; });
+            });
+            const okStyle = 'background-color: var(--success-bg); border-color: var(--success-border); color: #065f46; flex-wrap: wrap;';
+            if (docs.length === 1) {
+                const d = docs[0];
+                statusEl.innerHTML = `<div class="alert-banner green" style="${okStyle}">${docBadgeHtml(d)}${d.docDate ? `<span style="font-size:0.8rem;">${escHtml(d.docDate)}</span>` : ''}<span>${d.items.length} صنف — تم استلام ${checkedTotal} بالكامل</span></div>`;
+            } else {
+                const chips = docs.map(d => docBadgeHtml(d)).join(' ');
+                statusEl.innerHTML = `<div class="alert-banner green" style="${okStyle}"><span>✅ ${docs.length} أذونات محمّلة (${totalItems} صنف) — تم استلام ${checkedTotal} بالكامل</span><div style="width:100%; display:flex; flex-wrap:wrap; gap:6px;">${chips}</div></div>`;
+            }
             if (searchGroup) searchGroup.style.display = 'block';
-            // بمجرد ما الإذن يتحمل، بنخفي مربع رفع ملف تاني بالغلط فوق الإذن الحالي - المستخدم لازم يلغي الإذن الحالي أولاً
-            if (uploadGroup) uploadGroup.style.display = 'none';
+            // وضع "إذن واحد": نخفي الرفع لحد ما يتلغي. وضع "عدة أذونات": الرفع يفضل ظاهر لإضافة أذونات تانية.
+            if (modeSeg) modeSeg.style.display = 'none';
+            if (docMode === 'multi') {
+                if (uploadGroup) uploadGroup.style.display = 'block';
+                if (uploadLabel) uploadLabel.innerText = '➕ إضافة إذن/أذونات أخرى';
+            } else {
+                if (uploadGroup) uploadGroup.style.display = 'none';
+            }
             if (cancelBtn) cancelBtn.style.display = 'inline-block';
             if (fullListBtn) fullListBtn.style.display = 'block';
         }
 
-        function confirmCancelDocSession() {
-            if (!docFileLoaded) return;
-            const ok = window.confirm('هل أنت متأكد أنك عايز تلغي الإذن الحالي؟ هيتمسح كل التقدم المسجل (الأصناف المتعلّم عليها والكميات الجزئية) ومينفعش ترجعه تاني.');
-            if (!ok) return;
-            docItems = [];
-            docProgress = {};
-            docFileLoaded = false;
-            docPendingListVisible = false;
-            localStorage.removeItem(DOC_SESSION_KEY);
-            const searchInput = document.getElementById('docSearchInput');
-            if (searchInput) searchInput.value = '';
-            toggleClearBtn('docSearchInput', 'docSearchClearBtn');
-            const resultsDiv = document.getElementById('docSearchResults');
-            if (resultsDiv) resultsDiv.innerHTML = '';
-            const fileInput = document.getElementById('docExcelFile');
-            if (fileInput) fileInput.value = '';
-            docFullListVisible = false;
-            renderDocStatus();
-            renderDocPendingList();
-            renderDocFullList();
-            showNotification('تم إلغاء الإذن الحالي. تقدر ترفع إذن جديد دلوقتي.');
+        // --- إلغاء: إذن واحد بالاختيار، أو كل الأذونات ---
+        function openDocCancelMenu() {
+            if (docs.length === 0) return;
+            if (docs.length === 1) { cancelSingleDoc(docs[0].id); return; }
+            const modal = document.getElementById('docCancelModal');
+            const body = document.getElementById('docCancelModalBody');
+            if (!modal || !body) return;
+            const btnStyle = 'width:100%; padding:12px; margin-bottom:8px; border-radius:10px; border:1px solid #cbd5e1; background:#f8fafc; color:#334155; font-weight:bold; font-size:0.9rem; cursor:pointer; text-align:right;';
+            let html = `<div style="font-size:1.05rem; font-weight:800; color:#111827; margin-bottom:14px;">مين الإذن اللي عايز تلغيه؟</div>`;
+            docs.forEach(d => {
+                html += `<button style="${btnStyle}" onclick="closeDocCancelModal(); cancelSingleDoc('${d.id}')">📄 إذن رقم ${escHtml(d.docNo || 'غير محدد')} — ${d.items.length} صنف</button>`;
+            });
+            html += `<button style="${btnStyle} background:var(--danger-bg); color:var(--danger); border-color:var(--danger-border); text-align:center;" onclick="closeDocCancelModal(); cancelAllDocs()">🗑 إلغاء كل الأذونات</button>`;
+            html += `<button class="add-sample-btn" style="width:100%; padding:12px; margin-top:4px;" onclick="closeDocCancelModal()">رجوع</button>`;
+            body.innerHTML = html;
+            modal.style.display = 'flex';
         }
 
+        function closeDocCancelModal() {
+            const modal = document.getElementById('docCancelModal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        function afterDocsChanged() {
+            if (docs.length === 0) {
+                localStorage.removeItem(DOC_SESSION_KEY);
+                docMode = 'single';
+                ['full', 'pending'].forEach(k => { docBrowse[k] = { vis: false, docId: null, q: '' }; });
+                docOpenPartial.clear();
+                const searchInput = document.getElementById('docSearchInput');
+                if (searchInput) searchInput.value = '';
+                toggleClearBtn('docSearchInput', 'docSearchClearBtn');
+                const fileInput = document.getElementById('docExcelFile');
+                if (fileInput) fileInput.value = '';
+            } else {
+                ['full', 'pending'].forEach(k => { if (docBrowse[k].docId && !getDocById(docBrowse[k].docId)) docBrowse[k].docId = null; });
+                saveDocSession();
+            }
+            ['docFullListContainer', 'docPendingListContainer'].forEach(id => { const c = document.getElementById(id); if (c) c.dataset.view = ''; });
+            renderDocAll();
+        }
+
+        function cancelSingleDoc(id) {
+            const d = getDocById(id);
+            if (!d) return;
+            const label = d.docNo ? `رقم ${d.docNo}` : 'الحالي';
+            if (!window.confirm(`هل أنت متأكد أنك عايز تلغي الإذن ${label}؟ هيتمسح كل التقدم المسجل فيه (الأصناف المتعلّم عليها والكميات الجزئية) ومينفعش ترجعه تاني.`)) return;
+            docs = docs.filter(x => x.id !== id);
+            afterDocsChanged();
+            showNotification(docs.length === 0 ? 'تم إلغاء الإذن. تقدر ترفع إذن جديد دلوقتي.' : `تم إلغاء الإذن ${label}.`);
+        }
+
+        function cancelAllDocs() {
+            if (!window.confirm('هل أنت متأكد أنك عايز تلغي كل الأذونات؟ هيتمسح كل التقدم المسجل ومينفعش ترجعه تاني.')) return;
+            docs = [];
+            afterDocsChanged();
+            showNotification('تم إلغاء كل الأذونات. تقدر ترفع أذونات جديدة دلوقتي.');
+        }
+
+        // --- البحث بالباركود في كل الأذونات ---
         function searchDocPages() {
             const rawInput = document.getElementById('docSearchInput').value.trim();
             const resultsDiv = document.getElementById('docSearchResults');
             if (!resultsDiv) return;
-            if (rawInput.length === 0) {
-                resultsDiv.innerHTML = '';
-                return;
-            }
-            if (!docFileLoaded || docItems.length === 0) {
+            if (rawInput.length === 0) { resultsDiv.innerHTML = ''; return; }
+            if (docs.length === 0) {
                 resultsDiv.innerHTML = `<div class="alert-banner red">يرجى رفع ملف إذن الصرف أولاً!</div>`;
                 return;
             }
-            // نطابق فقط لو الباركود بينتهي بنفس الأرقام المكتوبة بالظبط (مش أي مكان فيه، بداية أو نص الباركود)
-            const searchDigits = rawInput.replace(/\D/g, '');
-            let matches = [];
-            if (searchDigits.length > 0) {
-                matches = docItems.filter(it => it.barcode.endsWith(searchDigits));
+            // مطابقة "ينتهي بـ" فقط (مش أي مكان في الباركود)
+            const digits = toEnglishDigits(rawInput).replace(/\D/g, '');
+            const matches = [];
+            if (digits.length > 0) {
+                docs.forEach((doc, di) => doc.items.forEach(it => {
+                    if (it.barcode.endsWith(digits)) matches.push({ doc, it, di });
+                }));
             }
-
             if (matches.length === 0) {
-                resultsDiv.innerHTML = `<div class="alert-banner red">لا يوجد صنف بالإذن باركوده منتهي بالأرقام دي.</div>`;
+                resultsDiv.innerHTML = `<div class="alert-banner red">لا يوجد صنف بالأذونات باركوده منتهي بالأرقام دي.</div>`;
                 return;
             }
+            // الأذونات اللي لسه ناقصة فيها الكمية تظهر الأول، وبعدين ترتيب الأذونات زي ما اتحملت
+            matches.sort((a, b) => ((isItemOpen(a.doc, a.it) ? 0 : 1) - (isItemOpen(b.doc, b.it) ? 0 : 1)) || (a.di - b.di));
 
-            let html = `<div class="alert-banner green" style="background-color: var(--success-bg); border-color: var(--success-border); color: #065f46;">تم العثور على ${matches.length} صنف مطابق</div>`;
-            matches.forEach(it => {
-                html += renderDocItemBox(it);
-            });
+            const okStyle = 'background-color: var(--success-bg); border-color: var(--success-border); color: #065f46;';
+            let html = `<div class="alert-banner green" style="${okStyle}">تم العثور على ${matches.length} صنف مطابق</div>`;
+            const distinctDocs = new Set(matches.map(m => m.doc.id)).size;
+            if (distinctDocs > 1) {
+                let need = 0, got = 0;
+                matches.forEach(m => {
+                    const a = parseFloat(m.it.actualQty);
+                    if (!isNaN(a)) need += a;
+                    got += getItemReceived(m.doc, m.it);
+                });
+                const left = Math.max(0, need - got);
+                html += `<div class="alert-banner yellow" style="flex-wrap:wrap;">🔎 الباركود ده موجود في ${distinctDocs} أذونات — المطلوب: ${need} | المستلم: ${got} | المتبقي: ${left}</div>`;
+            }
+            matches.forEach(m => { html += renderDocItemBox(m.doc, m.it, 's'); });
             resultsDiv.innerHTML = html;
         }
 
-        // نحدد لون/حالة عرض الصنف بناءً على تقدمه: أخضر = مستلم كامل، برتقالي = فيه تجاوز للكمية المسجلة عن
-        // الكمية الفعلية بالإذن (يحتاج مراجعة)، أزرق = لسه تحت المتابعة (فاضي أو جزئي عادي).
         function getDocItemStatus(it, prog) {
             const actualQtyNum = parseFloat(it.actualQty);
-            const hasValidActualQty = !isNaN(actualQtyNum);
-            const isOver = hasValidActualQty && prog.partialQty > actualQtyNum;
+            const isOver = !isNaN(actualQtyNum) && prog.partialQty > actualQtyNum;
             if (isOver) return 'over';
             if (prog.checked) return 'checked';
             return 'normal';
         }
 
-        function renderDocItemBox(it) {
+        // ctx = 's' (نتايج البحث) أو 'p' (قائمة الناقص) عشان الـ ids ما تتكررش لو نفس الصنف ظهر في الاتنين
+        function renderDocItemBox(doc, it, ctx) {
+            const m = it.mNumber;
+            const uid = doc.id + '_' + m + '_' + ctx;
             const qtyText = (it.actualQty !== '' && it.actualQty !== undefined && it.actualQty !== null) ? it.actualQty : '-';
-            const prog = getProgressFor(it.mNumber);
+            const prog = getProgress(doc, m);
             const status = getDocItemStatus(it, prog);
             const boxClass = status === 'checked' ? 'result-box green' : (status === 'over' ? 'result-box orange' : 'result-box blue');
             const historyText = prog.partialHistory && prog.partialHistory.length > 0
-                ? prog.partialHistory.join(' + ') + ' = ' + prog.partialQty
-                : '';
+                ? prog.partialHistory.join(' + ') + ' = ' + prog.partialQty : '';
             const overWarningHtml = status === 'over'
-                ? `<div class="alert-banner orange" style="margin-top:8px;">⚠️ الكمية المسجلة (${prog.partialQty}) أكبر من الكمية الفعلية بالإذن (${qtyText})! يُرجى المراجعة.</div>`
-                : '';
+                ? `<div class="alert-banner orange" style="margin-top:8px;">⚠️ الكمية المسجلة (${prog.partialQty}) أكبر من الكمية الفعلية بالإذن (${qtyText})! يُرجى المراجعة.</div>` : '';
             return `
-                    <div class="${boxClass}" style="margin-top: 10px;" id="docItemBox_${it.mNumber}">
-                        <div class="result-box-label">رقم الصنف بالإذن (م): <b style="font-size:1.1rem;">${it.mNumber}</b></div>
-                        <div class="result-box-value" style="font-size: 1.05rem;">${it.itemName || '(اسم الصنف غير متوفر)'}</div>
-                        <div style="font-size: 0.9rem; color: #475569; margin-top:4px; direction:ltr; text-align:right;">الباركود: ${it.barcode}</div>
+                    <div class="${boxClass}" style="margin-top: 10px;" id="docItemBox_${uid}">
+                        <div style="margin-bottom:8px;">${docBadgeHtml(doc)}</div>
+                        <div class="result-box-label">رقم الصنف بالإذن (م): <b style="font-size:1.1rem;">${m}</b></div>
+                        <div class="result-box-value" style="font-size: 1.05rem;">${escHtml(it.itemName) || '(اسم الصنف غير متوفر)'}</div>
+                        <div style="font-size: 0.9rem; color: #475569; margin-top:4px; direction:ltr; text-align:right;">الباركود: ${escHtml(it.barcode)}</div>
                         <div style="font-size: 0.9rem; color: #475569; margin-top:4px;">الكمية الفعلية بالإذن: <b>${qtyText}</b></div>
                         ${overWarningHtml}
 
                         <div style="margin-top:12px; padding-top:12px; border-top:1px dashed #cbd5e1;">
-                            <button onclick="toggleDocChecked('${it.mNumber}')" style="width:100%; padding:12px; border-radius:8px; border:none; font-weight:bold; font-size:0.95rem; cursor:pointer; ${status === 'checked' ? 'background-color: var(--success); color:white;' : 'background-color:#e2e8f0; color:#334155;'}">
+                            <button onclick="toggleDocChecked('${doc.id}','${m}')" style="width:100%; padding:12px; border-radius:8px; border:none; font-weight:bold; font-size:0.95rem; cursor:pointer; ${status === 'checked' ? 'background-color: var(--success); color:white;' : 'background-color:#e2e8f0; color:#334155;'}">
                                 ${status === 'checked' ? '✓ تم استلام الكمية كاملة' : '✓ استلمنا الكمية كاملة'}
                             </button>
                         </div>
 
                         <div style="margin-top:10px;">
                             <div style="font-size:0.85rem; font-weight:700; color:#334155; margin-bottom:6px;">تسجيل كمية جزئية موجودة دلوقتي</div>
-                            <div id="docPartialDisplay_${it.mNumber}" style="font-size:0.85rem; color:#0369a1; margin-bottom:6px; ${historyText ? '' : 'display:none;'}">
+                            <div style="font-size:0.85rem; color:#0369a1; margin-bottom:6px; ${historyText ? '' : 'display:none;'}">
                                 الكمية المسجلة لحد دلوقتي: <b>${historyText}</b>
                             </div>
                             <div style="display:flex; gap:8px;">
-                                <input type="number" id="docPartialInput_${it.mNumber}" placeholder="اكتب العدد اللي لقيته" style="flex:1; padding:10px; font-size:0.95rem;">
-                                <button onclick="addDocPartialQty('${it.mNumber}')" style="background-color: var(--dark-header); color:white; border:none; border-radius:8px; padding:0 16px; font-weight:bold; white-space:nowrap;">إضافة</button>
-                                ${prog.partialHistory && prog.partialHistory.length > 0 ? `<button onclick="resetDocPartialQty('${it.mNumber}')" style="background-color:#f1f5f9; color:#334155; border:1px solid #cbd5e1; border-radius:8px; padding:0 14px; font-weight:bold; white-space:nowrap;">تعديل</button>` : ''}
+                                <input type="number" id="docPartialInput_${uid}" placeholder="اكتب العدد اللي لقيته" style="flex:1; padding:10px; font-size:0.95rem;">
+                                <button onclick="addDocPartialQty('${doc.id}','${m}','${ctx}')" style="background-color: var(--dark-header); color:white; border:none; border-radius:8px; padding:0 16px; font-weight:bold; white-space:nowrap;">إضافة</button>
+                                ${prog.partialHistory && prog.partialHistory.length > 0 ? `<button onclick="resetDocPartialQty('${doc.id}','${m}')" style="background-color:#f1f5f9; color:#334155; border:1px solid #cbd5e1; border-radius:8px; padding:0 14px; font-weight:bold; white-space:nowrap;">تعديل</button>` : ''}
                             </div>
                         </div>
                     </div>
                 `;
         }
 
-        function toggleDocChecked(mNumber) {
-            const prog = getProgressFor(mNumber);
+        function toggleDocChecked(docId, m) {
+            const doc = getDocById(docId);
+            if (!doc) return;
+            const prog = getProgress(doc, m);
             prog.checked = !prog.checked;
             saveDocSession();
-            renderDocStatus();
-            searchDocPages();
-            renderDocPendingList();
-            renderDocFullList();
+            renderDocAll();
         }
 
-        function addDocPartialQty(mNumber) {
-            const input = document.getElementById('docPartialInput_' + mNumber);
+        function addDocPartialQty(docId, m, ctx) {
+            const doc = getDocById(docId);
+            if (!doc) return;
+            const input = document.getElementById('docPartialInput_' + docId + '_' + m + '_' + ctx);
             if (!input) return;
             const val = parseFloat(input.value);
             if (isNaN(val) || val <= 0) {
                 showNotification('من فضلك اكتب رقم صحيح أكبر من صفر.');
                 return;
             }
-            const prog = getProgressFor(mNumber);
-            const it = docItems.find(x => x.mNumber === mNumber);
+            const prog = getProgress(doc, m);
+            const it = doc.items.find(x => x.mNumber === m);
             const actualQtyNum = it ? parseFloat(it.actualQty) : NaN;
             const newTotal = (prog.partialQty || 0) + val;
             if (it && !isNaN(actualQtyNum) && newTotal > actualQtyNum) {
@@ -2930,174 +3115,300 @@
             if (!prog.partialHistory) prog.partialHistory = [];
             prog.partialHistory.push(val);
             prog.partialQty = newTotal;
-            // إكمال تلقائي: لو مجموع الكميات الجزئية وصل بالظبط لنفس الكمية الفعلية بالإذن،
-            // نعتبر الصنف "تم استلامه بالكامل" أوتوماتيكياً من غير الحاجة نضغط الزرار يدوياً.
+            // إكمال تلقائي لما المجموع يساوي الكمية الفعلية بالظبط
             let autoCompleted = false;
-            if (it && !isNaN(actualQtyNum) && newTotal === actualQtyNum && !prog.checked) {
+            if (it && !isNaN(actualQtyNum) && Math.abs(newTotal - actualQtyNum) < 1e-9 && !prog.checked) {
                 prog.checked = true;
                 autoCompleted = true;
             }
             saveDocSession();
             input.value = '';
-            searchDocPages();
-            renderDocPendingList();
-            renderDocFullList();
-            renderDocStatus();
+            renderDocAll();
             if (autoCompleted) {
-                showNotification(`✅ الصنف "${it.itemName || mNumber}" اكتمل تلقائياً واتحول لـ"تم الاستلام بالكامل"!`);
+                showNotification(`✅ الصنف "${it.itemName || m}" اكتمل تلقائياً واتحول لـ"تم الاستلام بالكامل"!`);
             }
         }
 
-        function resetDocPartialQty(mNumber) {
-            const ok = window.confirm('هيتمسح الهيستوري الحالي وتقدر تكتب رقم جديد من الأول. متأكد؟');
-            if (!ok) return;
-            const prog = getProgressFor(mNumber);
+        function resetDocPartialQty(docId, m) {
+            const doc = getDocById(docId);
+            if (!doc) return;
+            if (!window.confirm('هيتمسح الهيستوري الحالي وتقدر تكتب رقم جديد من الأول. متأكد؟')) return;
+            const prog = getProgress(doc, m);
             prog.partialQty = 0;
             prog.partialHistory = [];
             saveDocSession();
-            searchDocPages();
-            renderDocPendingList();
-            renderDocFullList();
+            renderDocAll();
         }
 
-        // --- عرض الأصناف الناقصة / اللي محتاجة مراجعة ---
-        // "ناقصة": مش متعلّم عليها كـ"مكتملة" وكميتها المسجلة (لو موجودة) أقل من الكمية الفعلية بالإذن.
-        // "تجاوز": كميتها المسجلة أكبر من الكمية الفعلية بالإذن (محتاجة مراجعة بغض النظر عن حالة "مكتملة").
-        let docPendingListVisible = false;
+        // --- شاشتين التصفح: "كل الأصناف" و"الأصناف الناقصة" - نفس الفكرة: اختيار الإذن ← أصناف الإذن + بحث بالاسم ---
+        const DOC_BROWSERS = {
+            full:    { cid: 'docFullListContainer',    bid: 'docFullListToggleBtn', ctx: 'f', pick: '📄 اختار الإذن اللي عايز تشوف أصنافه:' },
+            pending: { cid: 'docPendingListContainer', bid: 'docPendingToggleBtn',  ctx: 'q', pick: '📋 اختار الإذن اللي عايز تراجع نواقصه:' }
+        };
 
-        function toggleDocPendingList() {
-            docPendingListVisible = !docPendingListVisible;
-            renderDocPendingList();
-        }
-
-        function renderDocPendingList() {
-            const container = document.getElementById('docPendingListContainer');
-            const btn = document.getElementById('docPendingToggleBtn');
-            if (!container) return;
-            if (!docFileLoaded || docItems.length === 0) {
-                container.innerHTML = '';
-                container.style.display = 'none';
-                if (btn) btn.style.display = 'none';
-                return;
-            }
-            if (btn) btn.style.display = 'block';
-            if (!docPendingListVisible) {
-                container.style.display = 'none';
-                container.innerHTML = '';
-                if (btn) btn.innerText = '📋 عرض الأصناف الناقصة والمتجاوزة';
-                return;
-            }
-            if (btn) btn.innerText = '📋 إخفاء الأصناف الناقصة والمتجاوزة';
-
-            const pendingItems = [];
-            const overItems = [];
-            docItems.forEach(it => {
-                const prog = getProgressFor(it.mNumber);
-                const status = getDocItemStatus(it, prog);
-                if (status === 'over') {
-                    overItems.push(it);
-                } else if (status !== 'checked') {
-                    // ناقص لو لسه معندوش أي كمية مسجلة، أو عنده كمية جزئية لسه أقل من الفعلية
-                    const actualQtyNum = parseFloat(it.actualQty);
-                    const hasValidActualQty = !isNaN(actualQtyNum);
-                    if (!hasValidActualQty || prog.partialQty < actualQtyNum) {
-                        pendingItems.push(it);
-                    }
-                }
-            });
-
-            let html = '';
-            if (overItems.length === 0 && pendingItems.length === 0) {
-                html = `<div class="alert-banner green" style="background-color: var(--success-bg); border-color: var(--success-border); color: #065f46; margin-top:12px;">🎉 كل الأصناف مكتملة ومفيش أي تجاوز في الكميات!</div>`;
-            } else {
-                if (overItems.length > 0) {
-                    html += `<div class="alert-banner orange" style="margin-top:12px;">⚠️ يوجد ${overItems.length} صنف كميته المسجلة أكبر من الكمية الفعلية بالإذن (يحتاج مراجعة):</div>`;
-                    overItems.forEach(it => { html += renderDocItemBox(it); });
-                }
-                if (pendingItems.length > 0) {
-                    html += `<div class="alert-banner yellow" style="margin-top:12px;">⏳ يوجد ${pendingItems.length} صنف لسه ناقص أو مش متعلّم عليه بالكامل:</div>`;
-                    pendingItems.forEach(it => { html += renderDocItemBox(it); });
-                }
-            }
-            container.innerHTML = html;
-            container.style.display = 'block';
-        }
-
-        // --- عرض كل أصناف الإذن بالترتيب مع حالة كل صنف (مكتمل / جزئي / لسه) ---
-        let docFullListVisible = false;
-
-        function toggleDocFullList() {
-            docFullListVisible = !docFullListVisible;
-            renderDocFullList();
-        }
-
-        // بادج صغير يلخص حالة الصنف: نص + لون، بيستخدم متسق في القايمة الكاملة
         function getDocStatusBadge(it, prog, status) {
             if (status === 'over') return { text: '⚠️ تجاوز', color: '#d97706', bg: '#fffbeb' };
             if (status === 'checked') return { text: '✅ مكتمل', color: '#065f46', bg: '#ecfdf5' };
-            const actualQtyNum = parseFloat(it.actualQty);
-            const hasValidActualQty = !isNaN(actualQtyNum);
-            if (hasValidActualQty && prog.partialQty > 0 && prog.partialQty < actualQtyNum) {
-                return { text: `⏳ جزئي (${prog.partialQty}/${actualQtyNum})`, color: '#854d0e', bg: '#fef9c3' };
+            const a = parseFloat(it.actualQty);
+            if (!isNaN(a) && prog.partialQty > 0 && prog.partialQty < a) {
+                return { text: `⏳ جزئي (${prog.partialQty}/${a})`, color: '#854d0e', bg: '#fef9c3' };
             }
             return { text: '◻️ لسه ماخدش', color: '#64748b', bg: '#f1f5f9' };
         }
 
-        function renderDocFullList() {
-            const container = document.getElementById('docFullListContainer');
-            const btn = document.getElementById('docFullListToggleBtn');
+        // تطبيع النص للبحث بالاسم: تجاهل الفروق (أ/إ/آ/ا) و(ة/ه) و(ى/ي) والتشكيل، والأرقام العربي، والرموز
+        function normalizeNameSearch(t) {
+            return normalizeArabicHeader(toEnglishDigits(t)).replace(/[_\-()\[\]\/\\.,:*]+/g, ' ').replace(/\s+/g, ' ').trim();
+        }
+
+        function getDocDoneCount(doc) {
+            let n = 0;
+            doc.items.forEach(it => { if (getProgress(doc, it.mNumber).checked) n++; });
+            return n;
+        }
+
+        // الصنف "محتاج مراجعة": تجاوز، أو ناقص (مش مكتمل وكميته الجزئية أقل من الفعلية)
+        function getDocItemPendingKind(doc, it) {
+            const prog = getProgress(doc, it.mNumber);
+            const status = getDocItemStatus(it, prog);
+            if (status === 'over') return 'over';
+            if (status === 'checked') return null;
+            const a = parseFloat(it.actualQty);
+            if (isNaN(a) || prog.partialQty < a) return 'pending';
+            return null;
+        }
+
+        function getDocPendingCounts(doc) {
+            let pending = 0, over = 0;
+            doc.items.forEach(it => {
+                const k = getDocItemPendingKind(doc, it);
+                if (k === 'over') over++; else if (k === 'pending') pending++;
+            });
+            return { pending, over };
+        }
+
+        function docHeaderHeight() {
+            const h = document.querySelector('header');
+            return h ? h.offsetHeight : 0;
+        }
+
+        // ننزل بالشاشة لبداية القايمة (أول صنف / أول كارت) بدل أول الصفحة، مع مراعاة الهيدر الثابت
+        function scrollToDocContainer(kind) {
+            setTimeout(() => {
+                const c = document.getElementById(DOC_BROWSERS[kind].cid);
+                if (!c) return;
+                const top = c.getBoundingClientRect().top + window.scrollY - docHeaderHeight() - 8;
+                window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+            }, 30);
+        }
+
+        function toggleDocBrowser(kind) {
+            const st = docBrowse[kind];
+            st.vis = !st.vis;
+            if (st.vis) { st.q = ''; if (docs.length > 1) st.docId = null; }
+            const c = document.getElementById(DOC_BROWSERS[kind].cid);
+            if (c) c.dataset.view = '';
+            renderDocBrowser(kind);
+            if (st.vis) scrollToDocContainer(kind);
+        }
+        function toggleDocFullList() { toggleDocBrowser('full'); }
+        function toggleDocPendingList() { toggleDocBrowser('pending'); }
+
+        function openDocBrowserDoc(kind, docId) {
+            docBrowse[kind].docId = docId;
+            docBrowse[kind].q = '';
+            renderDocBrowser(kind);
+            scrollToDocContainer(kind);
+        }
+
+        // زرار الرجوع: في وضع عدة أذونات يرجع لكروت الأذونات، وفي إذن واحد يقفل القايمة ويرجّع الشاشة عند زرارها
+        function closeDocBrowserDoc(kind) {
+            const st = docBrowse[kind];
+            if (docs.length > 1) {
+                st.docId = null; st.q = '';
+                renderDocBrowser(kind);
+                scrollToDocContainer(kind);
+            } else {
+                st.vis = false; st.q = '';
+                renderDocBrowser(kind);
+                setTimeout(() => {
+                    const b = document.getElementById(DOC_BROWSERS[kind].bid);
+                    if (!b) return;
+                    const top = b.getBoundingClientRect().top + window.scrollY - docHeaderHeight() - 12;
+                    window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+                }, 30);
+            }
+        }
+
+        function onDocBrowserSearch(kind) {
+            const input = document.getElementById('docBrowseSearch_' + kind);
+            docBrowse[kind].q = input ? input.value : '';
+            renderDocBrowserItems(kind);
+        }
+
+        function toggleDocPartialBox(key) {
+            if (docOpenPartial.has(key)) docOpenPartial.delete(key); else docOpenPartial.add(key);
+            renderDocAll();
+            if (docOpenPartial.has(key)) {
+                setTimeout(() => { const inp = document.getElementById('docPartialInput_' + key); if (inp) inp.focus(); }, 50);
+            }
+        }
+
+        function renderDocCompactCard(doc, it, ctx) {
+            const m = it.mNumber;
+            const key = doc.id + '_' + m + '_' + ctx;
+            const prog = getProgress(doc, m);
+            const status = getDocItemStatus(it, prog);
+            const badge = getDocStatusBadge(it, prog, status);
+            const qtyText = (it.actualQty !== '' && it.actualQty !== undefined && it.actualQty !== null) ? it.actualQty : '-';
+            const isChecked = status === 'checked';
+            const open = docOpenPartial.has(key);
+            const hist = prog.partialHistory && prog.partialHistory.length > 0 ? prog.partialHistory.join(' + ') + ' = ' + prog.partialQty : '';
+            const border = status === 'over' ? '#fde68a' : '#e2e8f0';
+            return `
+                <div style="padding:12px; border:1px solid ${border}; border-radius:10px; margin-bottom:8px; background:#fff;">
+                    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:10px;">
+                        <div style="flex:1; min-width:0;">
+                            <div style="font-size:0.95rem; font-weight:700; color:var(--dark-header);">${m}. ${escHtml(it.itemName) || '(اسم غير متوفر)'}</div>
+                            <div style="font-size:0.8rem; color:#64748b; margin-top:4px; direction:ltr; text-align:right;">الباركود: ${escHtml(it.barcode) || 'غير محدد'}</div>
+                            <div style="font-size:0.8rem; color:#64748b; margin-top:2px;">الكمية الفعلية: ${qtyText}</div>
+                            ${hist ? `<div style="font-size:0.8rem; color:#0369a1; margin-top:2px;">المسجل: <b>${hist}</b></div>` : ''}
+                        </div>
+                        <div style="flex-shrink:0; font-size:0.8rem; font-weight:700; padding:6px 10px; border-radius:20px; white-space:nowrap; color:${badge.color}; background-color:${badge.bg};">${badge.text}</div>
+                    </div>
+                    <div style="display:flex; gap:8px; margin-top:10px;">
+                        <button onclick="toggleDocChecked('${doc.id}','${m}')" style="flex:1; padding:10px; border-radius:8px; border:none; font-weight:bold; font-size:0.85rem; cursor:pointer; ${isChecked ? 'background-color: var(--success); color:white;' : 'background-color:#e2e8f0; color:#334155;'}">${isChecked ? '✓ تم استلام الكمية كاملة' : '✓ استلام كامل'}</button>
+                        <button onclick="toggleDocPartialBox('${key}')" style="flex:1; padding:10px; border-radius:8px; border:1px solid #cbd5e1; font-weight:bold; font-size:0.85rem; cursor:pointer; background:${open ? '#e0f2fe' : '#f8fafc'}; color:#0369a1;">${open ? '▲ إخفاء الجزئي' : '➕ جزئي'}</button>
+                    </div>
+                    ${open ? `
+                    <div style="display:flex; gap:8px; margin-top:8px;">
+                        <input type="number" id="docPartialInput_${key}" placeholder="اكتب العدد اللي لقيته" style="flex:1; padding:10px; font-size:0.95rem;">
+                        <button onclick="addDocPartialQty('${doc.id}','${m}','${ctx}')" style="background-color: var(--dark-header); color:white; border:none; border-radius:8px; padding:0 16px; font-weight:bold; white-space:nowrap;">إضافة</button>
+                        ${hist ? `<button onclick="resetDocPartialQty('${doc.id}','${m}')" style="background-color:#f1f5f9; color:#334155; border:1px solid #cbd5e1; border-radius:8px; padding:0 14px; font-weight:bold; white-space:nowrap;">تعديل</button>` : ''}
+                    </div>` : ''}
+                </div>`;
+        }
+
+        function renderDocBrowserItems(kind) {
+            const st = docBrowse[kind];
+            const doc = getDocById(st.docId);
+            const listEl = document.getElementById('docBrowseItems_' + kind);
+            const sumEl = document.getElementById('docBrowseSum_' + kind);
+            if (!doc || !listEl) return;
+            const ctx = DOC_BROWSERS[kind].ctx;
+            const sorted = [...doc.items].sort((a, b) => parseInt(a.mNumber, 10) - parseInt(b.mNumber, 10));
+            const base = kind === 'pending' ? sorted.filter(it => getDocItemPendingKind(doc, it)) : sorted;
+            if (sumEl) {
+                if (kind === 'pending') {
+                    const c = getDocPendingCounts(doc);
+                    sumEl.innerText = `${c.pending} ناقص${c.over ? ` — ${c.over} تجاوز` : ''} من ${doc.items.length} صنف`;
+                } else {
+                    sumEl.innerText = `${doc.items.length} صنف — تم استلام ${getDocDoneCount(doc)} بالكامل`;
+                }
+            }
+            const tokens = normalizeNameSearch(st.q).split(' ').filter(Boolean);
+            const shown = tokens.length === 0 ? base : base.filter(it => {
+                const hay = normalizeNameSearch(it.itemName || '');
+                return tokens.every(t => hay.includes(t));
+            });
+            let html = '';
+            if (tokens.length > 0) html += `<div style="font-size:0.85rem; color:#64748b; margin-bottom:8px;">${shown.length} من ${base.length} صنف</div>`;
+            if (shown.length === 0) {
+                html += tokens.length > 0
+                    ? `<div class="alert-banner red">مفيش صنف بالاسم ده${kind === 'pending' ? ' في النواقص' : ' في الإذن'}.</div>`
+                    : `<div class="alert-banner green" style="background-color: var(--success-bg); border-color: var(--success-border); color: #065f46;">🎉 الإذن ده كل أصنافه مكتملة ومفيش أي تجاوز!</div>`;
+            }
+            shown.forEach(it => { html += renderDocCompactCard(doc, it, ctx); });
+            listEl.innerHTML = html;
+        }
+
+        function renderDocBrowser(kind) {
+            const cfg = DOC_BROWSERS[kind];
+            const st = docBrowse[kind];
+            const container = document.getElementById(cfg.cid);
+            const btn = document.getElementById(cfg.bid);
             if (!container) return;
-            if (!docFileLoaded || docItems.length === 0) {
-                container.innerHTML = '';
-                container.style.display = 'none';
+            if (docs.length === 0) {
+                container.innerHTML = ''; container.style.display = 'none'; container.dataset.view = '';
                 if (btn) btn.style.display = 'none';
                 return;
             }
             if (btn) btn.style.display = 'block';
-            if (!docFullListVisible) {
-                container.style.display = 'none';
-                container.innerHTML = '';
-                if (btn) btn.innerText = '📄 عرض كل أصناف الإذن بالترتيب';
+            const label = kind === 'pending' ? 'الأصناف الناقصة والمتجاوزة' : (docs.length > 1 ? 'كل الأصناف (بالأذونات)' : 'كل أصناف الإذن بالترتيب');
+            const icon = kind === 'pending' ? '📋' : '📄';
+            if (!st.vis) {
+                container.style.display = 'none'; container.innerHTML = ''; container.dataset.view = '';
+                if (btn) btn.innerText = `${icon} عرض ${label}`;
                 return;
             }
-            if (btn) btn.innerText = '📄 إخفاء كل أصناف الإذن';
+            if (btn) btn.innerText = `${icon} إخفاء ${label}`;
+            if (docs.length === 1) st.docId = docs[0].id;
+            if (st.docId && !getDocById(st.docId)) st.docId = null;
+            const viewKey = st.docId || 'cards';
 
-            // ترتيب الأصناف برقم "م" ترتيباً رقمياً تصاعدياً (بالترتيب اللي جه بيه الإذن أصلاً)
-            const sortedItems = [...docItems].sort((a, b) => parseInt(a.mNumber, 10) - parseInt(b.mNumber, 10));
+            // لو نفس الإذن مفتوح بالفعل بنحدّث الأصناف بس، عشان مربع البحث يحافظ على الكتابة والتركيز
+            if (st.docId && container.dataset.view === viewKey) {
+                renderDocBrowserItems(kind);
+                container.style.display = 'block';
+                return;
+            }
+            container.dataset.view = viewKey;
 
-            let html = `<div class="steps-box" style="margin-top:0; margin-bottom:16px;"><h4>📄 كل أصناف الإذن (${sortedItems.length} صنف) بالترتيب:</h4></div>`;
-            sortedItems.forEach(it => {
-                const prog = getProgressFor(it.mNumber);
-                const status = getDocItemStatus(it, prog);
-                const badge = getDocStatusBadge(it, prog, status);
-                const qtyText = (it.actualQty !== '' && it.actualQty !== undefined && it.actualQty !== null) ? it.actualQty : '-';
-                const isChecked = status === 'checked';
-                html += `
-                    <div style="padding:12px; border:1px solid #e2e8f0; border-radius:10px; margin-bottom:8px; background:#fff;">
-                        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:10px;">
-                            <div style="flex:1; min-width:0;">
-                                <div style="font-size:0.95rem; font-weight:700; color:var(--dark-header);">${it.mNumber}. ${it.itemName || '(اسم غير متوفر)'}</div>
-                                <div style="font-size:0.8rem; color:#64748b; margin-top:4px; direction:ltr; text-align:right;">الباركود: ${it.barcode || 'غير محدد'}</div>
-                                <div style="font-size:0.8rem; color:#64748b; margin-top:2px;">الكمية الفعلية: ${qtyText}</div>
+            if (!st.docId) {
+                let html = `<div class="steps-box" style="margin-top:0; margin-bottom:12px;"><h4>${cfg.pick}</h4></div>`;
+                docs.forEach(d => {
+                    const total = d.items.length;
+                    const done = getDocDoneCount(d);
+                    const pct = total > 0 ? Math.round(done * 100 / total) : 0;
+                    let side;
+                    if (kind === 'pending') {
+                        const c = getDocPendingCounts(d);
+                        side = (c.pending === 0 && c.over === 0)
+                            ? `<span style="font-size:0.8rem; font-weight:800; padding:4px 10px; border-radius:20px; background:#ecfdf5; color:#065f46;">✅ مكتمل</span>`
+                            : `<span style="display:flex; gap:6px;">${c.pending ? `<span style="font-size:0.8rem; font-weight:800; padding:4px 10px; border-radius:20px; background:#fef9c3; color:#854d0e;">⏳ ${c.pending} ناقص</span>` : ''}${c.over ? `<span style="font-size:0.8rem; font-weight:800; padding:4px 10px; border-radius:20px; background:#fffbeb; color:#d97706;">⚠️ ${c.over} تجاوز</span>` : ''}</span>`;
+                    } else {
+                        side = `<span class="arrow-left">&#10094;</span>`;
+                    }
+                    html += `
+                        <button onclick="openDocBrowserDoc('${kind}','${d.id}')" style="display:block; width:100%; text-align:right; padding:14px; margin-bottom:10px; border-radius:12px; border:1px solid #e2e8f0; background:#fff; cursor:pointer;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+                                <span style="font-size:1.05rem; font-weight:800; color:var(--dark-header);">📄 إذن رقم ${escHtml(d.docNo || 'غير محدد')}</span>
+                                ${side}
                             </div>
-                            <div style="flex-shrink:0; font-size:0.8rem; font-weight:700; padding:6px 10px; border-radius:20px; white-space:nowrap; color:${badge.color}; background-color:${badge.bg};">${badge.text}</div>
+                            ${d.docDate ? `<div style="font-size:0.8rem; color:#64748b; margin-top:2px;">${escHtml(d.docDate)}</div>` : ''}
+                            <div style="font-size:0.9rem; color:#475569; margin-top:6px;">${total} صنف — المستلم ${done}</div>
+                            <div style="height:8px; background:#e2e8f0; border-radius:8px; margin-top:8px; overflow:hidden;"><div style="height:100%; width:${pct}%; background:var(--success);"></div></div>
+                        </button>`;
+                });
+                container.innerHTML = html;
+            } else {
+                const doc = getDocById(st.docId);
+                // شريط ثابت فوق (تحت الهيدر مباشرة) فيه زرار الرجوع ورقم الإذن ومربع البحث، يفضل ظاهر وإنت بتنزل
+                container.innerHTML = `
+                    <div style="position:sticky; top:${docHeaderHeight()}px; z-index:50; background:var(--bg-main); padding:8px 0 8px; margin-bottom:6px; border-bottom:1px solid #e2e8f0;">
+                        <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+                            <button onclick="closeDocBrowserDoc('${kind}')" style="background:var(--dark-header); color:#fff; border:none; border-radius:8px; padding:9px 14px; font-weight:bold; font-size:0.85rem; cursor:pointer; white-space:nowrap;">${docs.length > 1 ? '→ الأذونات' : '→ رجوع'}</button>
+                            <div style="flex:1; min-width:0;">${docBadgeHtml(doc)}<div id="docBrowseSum_${kind}" style="font-size:0.78rem; color:#64748b; margin-top:2px;"></div></div>
                         </div>
-                        <button onclick="toggleDocChecked('${it.mNumber}')" style="width:100%; margin-top:10px; padding:10px; border-radius:8px; border:none; font-weight:bold; font-size:0.9rem; cursor:pointer; ${isChecked ? 'background-color: var(--success); color:white;' : 'background-color:#e2e8f0; color:#334155;'}">
-                            ${isChecked ? '✓ تم استلام الكمية كاملة' : '✓ تسجيل استلام الكمية كاملة'}
-                        </button>
+                        <div class="search-with-clear">
+                            <input type="text" id="docBrowseSearch_${kind}" placeholder="🔍 ابحث باسم الصنف..." value="${escHtml(st.q)}" oninput="onDocBrowserSearch('${kind}'); toggleClearBtn('docBrowseSearch_${kind}','docBrowseClear_${kind}');">
+                            <button type="button" id="docBrowseClear_${kind}" class="search-clear-btn" onclick="clearSearchInput('docBrowseSearch_${kind}','docBrowseClear_${kind}', () => onDocBrowserSearch('${kind}'))">✕</button>
+                        </div>
                     </div>
-                `;
-            });
-            container.innerHTML = html;
+                    <div id="docBrowseItems_${kind}"></div>`;
+                toggleClearBtn('docBrowseSearch_' + kind, 'docBrowseClear_' + kind);
+                renderDocBrowserItems(kind);
+            }
             container.style.display = 'block';
         }
 
-        // استرجاع تقدم إذن سابق (لو موجود) بمجرد فتح التطبيق، عشان يفضل محفوظ حتى لو المستخدم قفل المتصفح
+        function renderDocPendingList() { renderDocBrowser('pending'); }
+        function renderDocFullList() { renderDocBrowser('full'); }
+
+        // استرجاع الأذونات المحفوظة بمجرد فتح التطبيق
         window.addEventListener('DOMContentLoaded', function() {
-            const restored = loadDocSession();
-            renderDocStatus();
-            renderDocPendingList();
-            renderDocFullList();
+            loadDocSession();
+            renderDocAll();
         });
 
         // --- Navigation (Swipe to go back via History API) ---
@@ -3127,6 +3438,8 @@
             toggleClearBtn('taresSearchInput', 'taresSearchClearBtn');
             toggleClearBtn('taresSupplierFilterInput', 'taresSupplierFilterClearBtn');
             toggleClearBtn('docSearchInput', 'docSearchClearBtn');
+            toggleClearBtn('docBrowseSearch_full', 'docBrowseClear_full');
+            toggleClearBtn('docBrowseSearch_pending', 'docBrowseClear_pending');
         }
 
         window.addEventListener('popstate', (e) => {
