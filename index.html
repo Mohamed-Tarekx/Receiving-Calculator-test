@@ -1751,7 +1751,6 @@
             if(statusEl) {
                 if(!dbStr) {
                     statusEl.innerHTML = `<div class="alert-banner red">🔴 قاعدة البيانات فارغة تماماً. جاري التحميل التلقائي أو يرجى رفع الشيت!</div>`;
-                    fetchDefaultDB();
                 } else {
                     const db = JSON.parse(dbStr);
                     statusEl.innerHTML = `<div class="alert-banner green" style="background-color: var(--success-bg); border-color: var(--success-border); color: #065f46;">✅ قاعدة البيانات محملة وجاهزة! (عدد الشركات: ${db.length})</div>`;
@@ -1759,27 +1758,54 @@
             }
         }
 
-        function fetchDefaultDB() {
-            fetch('./default_db.xlsx')
+        // بصمة بسيطة للملف (الحجم + FNV) لاكتشاف أي تغيير في الملف اللي على السيرفر
+        function fileFingerprint(buf) {
+            const bytes = new Uint8Array(buf);
+            let h = 2166136261;
+            for (let i = 0; i < bytes.length; i++) {
+                h ^= bytes[i];
+                h = Math.imul(h, 16777619);
+            }
+            return bytes.length + '-' + (h >>> 0);
+        }
+
+        // مزامنة ملف افتراضي من السيرفر: بيجيبه بدون كاش، ولو اتغير عن آخر نسخة اتحملت بيستبدل الداتا المخزنة.
+        // لو مفيش نت أو فشل الجلب، التطبيق بيكمل بالنسخة المخزنة.
+        function syncDefaultFile(opts) {
+            return fetch(opts.url + '?t=' + Date.now(), { cache: 'no-store' })
                 .then(response => {
                     if (!response.ok) throw new Error("Network response was not ok");
                     return response.arrayBuffer();
                 })
-                .then(data => {
-                    const { workbook } = readWorkbookWithAutoRepair(data);
-                    const firstSheetName = workbook.SheetNames[0];
-                    const worksheet = workbook.Sheets[firstSheetName];
-                    const jsonData = XLSX.utils.sheet_to_json(worksheet, {header: 1});
-                    const db = processExcelData(jsonData);
+                .then(buf => {
+                    const fp = fileFingerprint(buf);
+                    if (localStorage.getItem(opts.metaKey) === fp && localStorage.getItem(opts.dbKey)) return;
+                    const db = opts.process(buf);
                     if (db.length > 0) {
-                        localStorage.setItem('check100DB', JSON.stringify(db));
-                        updateDBStatus();
-                        showNotification(`تم تحميل الشيت الأساسي تلقائياً! (${db.length} شركة)`);
+                        localStorage.setItem(opts.dbKey, JSON.stringify(db));
+                        localStorage.setItem(opts.metaKey, fp);
+                        opts.onUpdated();
+                        showNotification(`تم تحديث ${opts.label} تلقائياً! (${db.length})`);
                     }
                 })
                 .catch(error => {
-                    console.log("No default DB found on server, waiting for manual upload.", error);
+                    console.log("تعذر مزامنة " + opts.label + " (شغال بالنسخة المخزنة)", error);
                 });
+        }
+
+        function fetchDefaultDB() {
+            syncDefaultFile({
+                url: './default_db.xlsx',
+                dbKey: 'check100DB',
+                metaKey: 'check100DB_fp',
+                label: 'قائمة التشييك 100%',
+                process: (buf) => {
+                    const { workbook } = readWorkbookWithAutoRepair(buf);
+                    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                    return processExcelData(XLSX.utils.sheet_to_json(worksheet, {header: 1}));
+                },
+                onUpdated: () => { updateDBStatus(); searchCompany(); }
+            });
         }
 
         function processExcelData(data) {
@@ -1931,7 +1957,7 @@
             resultsSec.style.display = 'block';
         }
 
-        window.addEventListener('DOMContentLoaded', updateDBStatus);
+        window.addEventListener('DOMContentLoaded', () => { updateDBStatus(); fetchDefaultDB(); });
 
         // --- TARES (فوارغ الموازين) SYSTEM ---
         function updateTaresDBStatus() {
@@ -1940,7 +1966,6 @@
             if (statusEl) {
                 if (!dbStr) {
                     statusEl.innerHTML = `<div class="alert-banner red">🔴 قاعدة بيانات الفوارغ فارغة. جاري التحميل التلقائي أو يرجى رفع الشيت!</div>`;
-                    fetchDefaultTaresDB();
                 } else {
                     const db = JSON.parse(dbStr);
                     statusEl.innerHTML = `<div class="alert-banner green" style="background-color: var(--success-bg); border-color: var(--success-border); color: #065f46;">✅ قاعدة بيانات الفوارغ محملة وجاهزة! (عدد الأصناف: ${db.length})</div>`;
@@ -1949,23 +1974,17 @@
         }
 
         function fetchDefaultTaresDB() {
-            fetch('./tares_db.xlsx')
-                .then(response => {
-                    if (!response.ok) throw new Error("Network response was not ok");
-                    return response.arrayBuffer();
-                })
-                .then(data => {
-                    const { workbook } = readWorkbookWithAutoRepair(data);
-                    const db = processTaresWorkbook(workbook);
-                    if (db.length > 0) {
-                        localStorage.setItem('taresDB', JSON.stringify(db));
-                        updateTaresDBStatus();
-                        showNotification(`تم تحميل شيت الفوارغ تلقائياً! (${db.length} صنف)`);
-                    }
-                })
-                .catch(error => {
-                    console.log("No default tares DB found on server, waiting for manual upload.", error);
-                });
+            syncDefaultFile({
+                url: './tares_db.xlsx',
+                dbKey: 'taresDB',
+                metaKey: 'taresDB_fp',
+                label: 'شيت الفوارغ',
+                process: (buf) => {
+                    const { workbook } = readWorkbookWithAutoRepair(buf);
+                    return processTaresWorkbook(workbook);
+                },
+                onUpdated: () => { updateTaresDBStatus(); searchTares(); }
+            });
         }
 
         function processTaresWorkbook(workbook) {
@@ -2317,7 +2336,7 @@
             box.innerHTML = html;
         }
 
-        window.addEventListener('DOMContentLoaded', updateTaresDBStatus);
+        window.addEventListener('DOMContentLoaded', () => { updateTaresDBStatus(); fetchDefaultTaresDB(); });
 
         // --- VACUUM MEAT DEDUCTION MODULE (تخصيم اللحمة الفاكيوم) ---
         // قاعدة بيانات الأصناف الثابتة: وزن السبت، وزن الكيس، وهل يُطبق عليه خصم "التقاطيع" 2%

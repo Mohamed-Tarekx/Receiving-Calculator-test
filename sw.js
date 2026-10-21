@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fathalla-receiving-v20-final';
+const CACHE_NAME = 'fathalla-receiving-v21-final';
 const ASSETS = [
   './',
   './index.html',
@@ -57,6 +57,11 @@ function fetchAndUpdateCache(request) {
 self.addEventListener('fetch', (e) => {
   // حماية وتصفية الطلبات المباشرة لضمان عدم توقف النظام أوفلاين بسبب ملحقات المتصفحات الخارجية
   if (e.request.method !== 'GET' || !e.request.url.startsWith('http')) {
+    return;
+  }
+
+  // ملفات البيانات (إكسيل) دايماً من الشبكة مباشرة بدون تدخل كاش الـ Service Worker
+  if (/\/(default_db|tares_db)\.xlsx/.test(e.request.url)) {
     return;
   }
 
